@@ -102,7 +102,7 @@ export default function PolicyPage() {
           <div className="p-3 text-xs text-muted">
             <p>{tax.explanation}</p>
             <p className="mt-2 rounded border border-accent/30 bg-accent/5 px-2 py-1 text-accent">
-              This exemption is independent of EO 658's MW threshold — the two frameworks are not combined.
+              This exemption is independent of EO 658&apos;s MW threshold — the two frameworks are not combined.
             </p>
             {taxSource && (
               <a href={taxSource.url} target="_blank" rel="noopener noreferrer" className="mt-2 inline-flex items-center gap-1 text-accent hover:underline">
