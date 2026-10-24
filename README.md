@@ -10,6 +10,13 @@ space, nearby communities, and local economic conditions.
 > Built for **Hackachusetts 2026** · Climate Tech track · developed with **Kiro** using a
 > spec-driven workflow (see [`KIRO_USAGE.md`](./KIRO_USAGE.md) and [`.kiro/`](./.kiro)).
 
+![DataDaddy dashboard — Worcester, 40 MW scenario](./docs/datadaddy-demo.png)
+
+*Live site-intelligence dashboard: a 40 MW data center at Worcester resolves to 297.84 GWh/yr
+facility demand, a modeled water estimate, mapped open-space / school / EJ context, and EO 658
+regulatory findings — every value labeled by provenance. Try it instantly with no install by
+opening [`demo/standalone.html`](./demo/standalone.html) (full interactive MapLibre map) in any browser.*
+
 ---
 
 ## 1. What DataDaddy does
