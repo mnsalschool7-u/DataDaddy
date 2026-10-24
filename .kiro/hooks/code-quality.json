@@ -1,0 +1,16 @@
+{
+  "version": "v1",
+  "hooks": [
+    {
+      "name": "Code Quality Hook",
+      "trigger": "PostFileSave",
+      "description": "Runs TypeScript type checking and ESLint after source edits.",
+      "matcher": "src/.*\\.(ts|tsx)$",
+      "action": {
+        "type": "command",
+        "command": "npm run typecheck 2>&1 | tail -20 && npm run lint 2>&1 | tail -20",
+        "timeout": 180
+      }
+    }
+  ]
+}

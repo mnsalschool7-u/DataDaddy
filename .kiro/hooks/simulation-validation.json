@@ -1,0 +1,16 @@
+{
+  "version": "v1",
+  "hooks": [
+    {
+      "name": "Simulation Validation Hook",
+      "trigger": "PostFileSave",
+      "description": "Runs focused simulation/scoring/geo/policy tests when those modules change.",
+      "matcher": "src/lib/(model|geo|policy)/.*\\.ts$",
+      "action": {
+        "type": "command",
+        "command": "npx vitest --run src/lib/model src/lib/geo src/lib/policy 2>&1 | tail -30",
+        "timeout": 180
+      }
+    }
+  ]
+}

@@ -1,0 +1,16 @@
+{
+  "version": "v1",
+  "hooks": [
+    {
+      "name": "Source Integrity Hook",
+      "trigger": "PostFileSave",
+      "description": "Validates data-source metadata and policy source links when data/policy files change.",
+      "matcher": "src/lib/(data|policy)/.*\\.ts$",
+      "action": {
+        "type": "command",
+        "command": "node scripts/check-source-integrity.mjs 2>&1 | tail -30",
+        "timeout": 60
+      }
+    }
+  ]
+}
