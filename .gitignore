@@ -34,3 +34,7 @@ next-env.d.ts
 
 # sandbox session settings (not part of the project)
 .kiro/settings/
+
+# local browser-tool scratch
+.agentbrowser/
+.kiro/artifacts/

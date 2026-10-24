@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>DataDaddy — Massachusetts Data Center Siting Intelligence</title>
+<link href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" rel="stylesheet" />
+<style>
+  :root{
+    --bg:#0a0f1a;--panel:#141b2b;--panel2:#1c2639;--border:#273349;--text:#e5ecf5;--muted:#8ba0bf;
+    --favorable:#34d399;--favorable2:#a3e635;--caution:#fbbf24;--excluded:#64748b;--unavail:#475569;--risk:#f87171;--accent:#38bdf8;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%;background:var(--bg);color:var(--text);
+    font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;font-size:13px;overflow:hidden}
+  .tabular{font-variant-numeric:tabular-nums}
+  .grid-texture{background-image:linear-gradient(to right,rgba(39,51,73,.35) 1px,transparent 1px),linear-gradient(to bottom,rgba(39,51,73,.35) 1px,transparent 1px);background-size:28px 28px}
+  header{height:48px;display:flex;align-items:center;justify-content:space-between;padding:0 16px;border-bottom:1px solid var(--border);background:var(--panel)}
+  .brand{display:flex;align-items:center;gap:8px}
+  .logo{width:28px;height:28px;border-radius:7px;background:rgba(56,189,248,.2);color:var(--accent);display:flex;align-items:center;justify-content:center;font-weight:800}
+  .brand b{font-size:14px}.brand .acc{color:var(--accent)}
+  .tag{font-size:9px;letter-spacing:.15em;text-transform:uppercase;color:var(--muted)}
+  nav{display:flex;gap:4px}.nav a{font-size:12px;color:var(--muted);padding:6px 10px;border-radius:6px;text-decoration:none}
+  .nav a.active{background:rgba(56,189,248,.15);color:var(--accent)}
+  main{display:flex;height:calc(100% - 48px)}
+  aside{width:300px;flex:0 0 300px;overflow-y:auto;border-right:1px solid var(--border);background:rgba(10,15,26,.6);padding:12px;display:flex;flex-direction:column;gap:12px}
+  aside.right{border-right:none;border-left:1px solid var(--border);width:360px;flex-basis:360px}
+  .map-wrap{flex:1;min-width:0;position:relative}
+  #map{position:absolute;inset:0}
+  .panel{border:1px solid var(--border);background:rgba(20,27,43,.8);border-radius:10px}
+  .ph{display:flex;align-items:center;justify-content:space-between;padding:8px 12px;border-bottom:1px solid var(--border);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:600}
+  .pb{padding:10px}
+  label.ctl{display:block;margin-bottom:10px}
+  label.ctl .row{display:flex;justify-content:space-between;font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+  label.ctl .val{color:var(--text);font-weight:600}
+  input[type=range]{width:100%;accent-color:var(--accent);margin-top:4px}
+  select,input[type=number],input[type=text]{width:100%;background:var(--panel2);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:5px 8px;font-size:13px;margin-top:4px}
+  .metrics{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .metric{border:1px solid var(--border);background:rgba(28,38,57,.6);border-radius:8px;padding:8px 10px}
+  .metric .lab{font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);display:flex;justify-content:space-between;align-items:center}
+  .metric .num{font-size:18px;font-weight:700;margin-top:3px}
+  .metric .sub{font-size:11px;color:var(--muted);margin-top:2px}
+  .chip{font-size:9px;text-transform:uppercase;letter-spacing:.04em;border:1px solid;border-radius:4px;padding:1px 5px}
+  .c-official{color:var(--favorable);border-color:rgba(52,211,153,.4);background:rgba(52,211,153,.12)}
+  .c-calculated{color:var(--accent);border-color:rgba(56,189,248,.4);background:rgba(56,189,248,.12)}
+  .c-assumption{color:var(--caution);border-color:rgba(251,191,36,.4);background:rgba(251,191,36,.12)}
+  .c-estimated{color:var(--caution);border-color:rgba(251,191,36,.3);background:rgba(251,191,36,.08)}
+  .c-unknown{color:var(--muted);border-color:rgba(100,116,139,.4);background:rgba(100,116,139,.2)}
+  .acc-fav{color:var(--favorable)}.acc-cau{color:var(--caution)}.acc-risk{color:var(--risk)}.acc-acc{color:var(--accent)}.acc-mut{color:var(--muted)}
+  .legend{position:absolute;bottom:16px;right:12px;width:260px;background:rgba(20,27,43,.96);border:1px solid var(--border);border-radius:10px;padding:12px;font-size:12px;z-index:5}
+  .legend .lg{display:flex;gap:8px;align-items:flex-start;margin-bottom:6px}
+  .sw{width:12px;height:12px;border-radius:3px;flex:0 0 12px;margin-top:2px}
+  .hatch{background-image:repeating-linear-gradient(45deg,var(--unavail),var(--unavail) 3px,transparent 3px,transparent 6px);border:1px solid var(--unavail)}
+  .note{font-size:10px;color:var(--muted);line-height:1.4}
+  .finding{border:1px solid var(--border);border-radius:8px;padding:8px;margin-top:8px}
+  .finding .ttl{font-size:12px;font-weight:600}
+  .toggle{display:flex;align-items:center;justify-content:space-between;border:1px solid var(--border);background:rgba(28,38,57,.4);border-radius:6px;padding:6px 8px;font-size:12px;color:var(--muted);cursor:pointer;margin-bottom:6px}
+  .toggle.on{border-color:rgba(56,189,248,.4);background:rgba(56,189,248,.1);color:var(--text)}
+  .toggle .box{width:14px;height:14px;border:1px solid var(--border);border-radius:3px}
+  .toggle.on .box{background:var(--accent);border-color:var(--accent)}
+  .radii{display:flex;gap:6px}
+  .radii button{flex:1;border:1px solid var(--border);background:rgba(28,38,57,.4);color:var(--muted);border-radius:6px;padding:4px;font-size:12px;cursor:pointer}
+  .radii button.on{border-color:var(--accent);background:rgba(56,189,248,.15);color:var(--accent)}
+  .bar{height:8px;background:var(--panel2);border-radius:4px;overflow:hidden;margin-top:3px}
+  .bar>div{height:100%}
+  .banner{border:1px solid;border-radius:8px;padding:8px 10px;font-size:12px}
+  .b-unknown{border-color:rgba(100,116,139,.4);background:rgba(100,116,139,.1);color:var(--muted)}
+  .b-risk{border-color:rgba(248,113,113,.4);background:rgba(248,113,113,.1);color:var(--risk)}
+  .b-ok{border-color:rgba(52,211,153,.4);background:rgba(52,211,153,.1);color:var(--favorable)}
+  .swatch{width:12px;height:12px;border-radius:3px;display:inline-block;margin-right:6px;vertical-align:middle}
+  .demo-badge{position:absolute;top:10px;left:10px;z-index:6;background:rgba(56,189,248,.15);border:1px solid rgba(56,189,248,.4);color:var(--accent);font-size:10px;padding:3px 8px;border-radius:6px;letter-spacing:.05em}
+</style>
+</head>
+<body>
+<header>
+  <div class="brand">
+    <div class="logo">D</div>
+    <div>
+      <b>Data<span class="acc">Daddy</span></b>
+      <div class="tag">Putting data centers in their place</div>
+    </div>
+  </div>
+  <nav class="nav">
+    <a class="active">Explore Map</a><a>Scenario Lab</a><a>Compare Sites</a><a>Massachusetts Policy</a><a>Data &amp; Methodology</a>
+  </nav>
+</header>
+<main>
+  <!-- LEFT -->
+  <aside class="left grid-texture">
+    <div class="panel"><div class="ph">Location search</div><div class="pb">
+      <input id="search" type="text" placeholder="Search a Massachusetts municipality…" autocomplete="off" />
+      <div id="results"></div>
+      <div class="note" style="margin-top:6px">Or click anywhere on the map to select a location.</div>
+    </div></div>
+
+    <div class="panel"><div class="ph">Data layers</div><div class="pb" id="layers">
+      <div class="toggle on" data-layer="municipalities"><span><span class="swatch" style="background:#8ba0bf"></span>Municipal boundaries</span><span class="box"></span></div>
+      <div class="toggle on" data-layer="openspace"><span><span class="swatch" style="background:#34d399"></span>Protected &amp; recreational open space</span><span class="box"></span></div>
+      <div class="toggle on" data-layer="ej"><span><span class="swatch" style="background:#a3e635"></span>Environmental justice block groups</span><span class="box"></span></div>
+      <div class="toggle on" data-layer="schools"><span><span class="swatch" style="background:#fbbf24"></span>Schools</span><span class="box"></span></div>
+      <div class="note" style="border:1px dashed var(--border);border-radius:6px;padding:6px">Flood hazard &amp; documented data centers: layer data unavailable — shown as unavailable rather than fabricated.</div>
+    </div></div>
+
+    <div class="panel"><div class="ph">Project assumptions</div><div class="pb" id="controls">
+      <label class="ctl"><div class="row"><span>Project type</span></div>
+        <select id="ptype"><option value="enterprise">Enterprise data center</option><option value="hyperscale">Hyperscale data center</option><option value="ai-compute">AI compute facility</option><option value="university-research">University research compute</option></select></label>
+      <label class="ctl"><div class="row"><span>Peak facility demand</span><span class="val"><span id="mwv">40</span> MW</span></div><input id="mw" type="range" min="5" max="200" step="1" value="40"></label>
+      <label class="ctl"><div class="row"><span>Average utilization</span><span class="val"><span id="utilv">85</span>%</span></div><input id="util" type="range" min="30" max="100" step="1" value="85"></label>
+      <label class="ctl"><div class="row"><span>PUE (illustrative 1.4)</span></div><input id="pue" type="number" min="1" max="3" step="0.05" value="1.4"></label>
+      <label class="ctl"><div class="row"><span>Cooling technology</span></div>
+        <select id="cool"><option value="air">Air cooled</option><option value="water">Water based</option><option value="hybrid" selected>Hybrid</option><option value="closed-loop-liquid">Closed-loop liquid cooling</option></select></label>
+      <label class="ctl"><div class="row"><span>WUE (L/kWh IT)</span></div><input id="wue" type="number" min="0" max="10" step="0.05" value="0.5"></label>
+      <label class="ctl"><div class="row"><span>Clean-energy coverage</span><span class="val"><span id="cleanv">30</span>%</span></div><input id="clean" type="range" min="0" max="100" step="1" value="30"></label>
+      <label class="ctl"><div class="row"><span>Available grid capacity</span></div><input id="cap" type="number" min="0" step="1" placeholder="unknown"></label>
+    </div></div>
+
+    <div class="panel"><div class="ph">Development filters</div><div class="pb">
+      <div class="toggle" id="expansion"><span>Treat as expansion of existing capacity</span><span class="box"></span></div>
+      <div class="row" style="font-size:11px;color:var(--muted);text-transform:uppercase;margin:4px 0">Analysis radius</div>
+      <div class="radii" id="radii"><button data-r="1">1 mi</button><button class="on" data-r="3">3 mi</button><button data-r="5">5 mi</button></div>
+    </div></div>
+  </aside>
+
+  <!-- MAP -->
+  <div class="map-wrap">
+    <div class="demo-badge">DataDaddy demo · live model engine</div>
+    <div id="map"></div>
+    <div class="legend">
+      <div style="font-weight:600;color:var(--muted);text-transform:uppercase;font-size:11px;letter-spacing:.08em;margin-bottom:8px">Screening legend</div>
+      <div class="lg"><span class="sw" style="background:#34d399"></span><div><b>Lower modeled constraints</b><div class="note">Relatively favorable under screening assumptions</div></div></div>
+      <div class="lg"><span class="sw" style="background:#fbbf24"></span><div><b>Constrained</b><div class="note">Environmental / community / infrastructure considerations</div></div></div>
+      <div class="lg"><span class="sw" style="background:#64748b"></span><div><b>Excluded (verified)</b><div class="note">Documented restriction incompatible with project</div></div></div>
+      <div class="lg"><span class="sw hatch"></span><div><b>Data unavailable</b><div class="note">Insufficient info to classify</div></div></div>
+      <div class="banner b-unknown" id="legendgrid" style="margin-top:6px">Grid: Local available capacity unknown</div>
+      <div class="note" style="border-top:1px solid var(--border);padding-top:8px;margin-top:8px">Colors represent a preliminary screening model — <b>not</b> a government permitting decision or approval.</div>
+    </div>
+  </div>
+
+  <!-- RIGHT -->
+  <aside class="right grid-texture" id="right">
+    <div id="empty" class="panel"><div class="pb" style="text-align:center;padding:30px 16px">
+      <div style="font-size:14px;font-weight:600">No location selected</div>
+      <div class="note" style="margin-top:8px">Click a point on the Massachusetts map or search a municipality to open the site intelligence panel and run the simulation.</div>
+    </div></div>
+    <div id="intel" style="display:none;flex-direction:column;gap:12px"></div>
+  </aside>
+</main>
+
+<script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
+<script src="https://unpkg.com/@turf/turf@7.1.0/turf.min.js"></script>
+<script src="./app.js"></script>
+</body>
+</html>

@@ -1,0 +1,414 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>DataDaddy — Massachusetts Data Center Siting Intelligence</title>
+<link href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" rel="stylesheet" />
+<style>
+  :root{
+    --bg:#0a0f1a;--panel:#141b2b;--panel2:#1c2639;--border:#273349;--text:#e5ecf5;--muted:#8ba0bf;
+    --favorable:#34d399;--favorable2:#a3e635;--caution:#fbbf24;--excluded:#64748b;--unavail:#475569;--risk:#f87171;--accent:#38bdf8;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%;background:var(--bg);color:var(--text);
+    font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;font-size:13px;overflow:hidden}
+  .tabular{font-variant-numeric:tabular-nums}
+  .grid-texture{background-image:linear-gradient(to right,rgba(39,51,73,.35) 1px,transparent 1px),linear-gradient(to bottom,rgba(39,51,73,.35) 1px,transparent 1px);background-size:28px 28px}
+  header{height:48px;display:flex;align-items:center;justify-content:space-between;padding:0 16px;border-bottom:1px solid var(--border);background:var(--panel)}
+  .brand{display:flex;align-items:center;gap:8px}
+  .logo{width:28px;height:28px;border-radius:7px;background:rgba(56,189,248,.2);color:var(--accent);display:flex;align-items:center;justify-content:center;font-weight:800}
+  .brand b{font-size:14px}.brand .acc{color:var(--accent)}
+  .tag{font-size:9px;letter-spacing:.15em;text-transform:uppercase;color:var(--muted)}
+  nav{display:flex;gap:4px}.nav a{font-size:12px;color:var(--muted);padding:6px 10px;border-radius:6px;text-decoration:none}
+  .nav a.active{background:rgba(56,189,248,.15);color:var(--accent)}
+  main{display:flex;height:calc(100% - 48px)}
+  aside{width:300px;flex:0 0 300px;overflow-y:auto;border-right:1px solid var(--border);background:rgba(10,15,26,.6);padding:12px;display:flex;flex-direction:column;gap:12px}
+  aside.right{border-right:none;border-left:1px solid var(--border);width:360px;flex-basis:360px}
+  .map-wrap{flex:1;min-width:0;position:relative}
+  #map{position:absolute;inset:0}
+  .panel{border:1px solid var(--border);background:rgba(20,27,43,.8);border-radius:10px}
+  .ph{display:flex;align-items:center;justify-content:space-between;padding:8px 12px;border-bottom:1px solid var(--border);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:600}
+  .pb{padding:10px}
+  label.ctl{display:block;margin-bottom:10px}
+  label.ctl .row{display:flex;justify-content:space-between;font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+  label.ctl .val{color:var(--text);font-weight:600}
+  input[type=range]{width:100%;accent-color:var(--accent);margin-top:4px}
+  select,input[type=number],input[type=text]{width:100%;background:var(--panel2);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:5px 8px;font-size:13px;margin-top:4px}
+  .metrics{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .metric{border:1px solid var(--border);background:rgba(28,38,57,.6);border-radius:8px;padding:8px 10px}
+  .metric .lab{font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);display:flex;justify-content:space-between;align-items:center}
+  .metric .num{font-size:18px;font-weight:700;margin-top:3px}
+  .metric .sub{font-size:11px;color:var(--muted);margin-top:2px}
+  .chip{font-size:9px;text-transform:uppercase;letter-spacing:.04em;border:1px solid;border-radius:4px;padding:1px 5px}
+  .c-official{color:var(--favorable);border-color:rgba(52,211,153,.4);background:rgba(52,211,153,.12)}
+  .c-calculated{color:var(--accent);border-color:rgba(56,189,248,.4);background:rgba(56,189,248,.12)}
+  .c-assumption{color:var(--caution);border-color:rgba(251,191,36,.4);background:rgba(251,191,36,.12)}
+  .c-estimated{color:var(--caution);border-color:rgba(251,191,36,.3);background:rgba(251,191,36,.08)}
+  .c-unknown{color:var(--muted);border-color:rgba(100,116,139,.4);background:rgba(100,116,139,.2)}
+  .acc-fav{color:var(--favorable)}.acc-cau{color:var(--caution)}.acc-risk{color:var(--risk)}.acc-acc{color:var(--accent)}.acc-mut{color:var(--muted)}
+  .legend{position:absolute;bottom:16px;right:12px;width:260px;background:rgba(20,27,43,.96);border:1px solid var(--border);border-radius:10px;padding:12px;font-size:12px;z-index:5}
+  .legend .lg{display:flex;gap:8px;align-items:flex-start;margin-bottom:6px}
+  .sw{width:12px;height:12px;border-radius:3px;flex:0 0 12px;margin-top:2px}
+  .hatch{background-image:repeating-linear-gradient(45deg,var(--unavail),var(--unavail) 3px,transparent 3px,transparent 6px);border:1px solid var(--unavail)}
+  .note{font-size:10px;color:var(--muted);line-height:1.4}
+  .finding{border:1px solid var(--border);border-radius:8px;padding:8px;margin-top:8px}
+  .finding .ttl{font-size:12px;font-weight:600}
+  .toggle{display:flex;align-items:center;justify-content:space-between;border:1px solid var(--border);background:rgba(28,38,57,.4);border-radius:6px;padding:6px 8px;font-size:12px;color:var(--muted);cursor:pointer;margin-bottom:6px}
+  .toggle.on{border-color:rgba(56,189,248,.4);background:rgba(56,189,248,.1);color:var(--text)}
+  .toggle .box{width:14px;height:14px;border:1px solid var(--border);border-radius:3px}
+  .toggle.on .box{background:var(--accent);border-color:var(--accent)}
+  .radii{display:flex;gap:6px}
+  .radii button{flex:1;border:1px solid var(--border);background:rgba(28,38,57,.4);color:var(--muted);border-radius:6px;padding:4px;font-size:12px;cursor:pointer}
+  .radii button.on{border-color:var(--accent);background:rgba(56,189,248,.15);color:var(--accent)}
+  .bar{height:8px;background:var(--panel2);border-radius:4px;overflow:hidden;margin-top:3px}
+  .bar>div{height:100%}
+  .banner{border:1px solid;border-radius:8px;padding:8px 10px;font-size:12px}
+  .b-unknown{border-color:rgba(100,116,139,.4);background:rgba(100,116,139,.1);color:var(--muted)}
+  .b-risk{border-color:rgba(248,113,113,.4);background:rgba(248,113,113,.1);color:var(--risk)}
+  .b-ok{border-color:rgba(52,211,153,.4);background:rgba(52,211,153,.1);color:var(--favorable)}
+  .swatch{width:12px;height:12px;border-radius:3px;display:inline-block;margin-right:6px;vertical-align:middle}
+  .demo-badge{position:absolute;top:10px;left:10px;z-index:6;background:rgba(56,189,248,.15);border:1px solid rgba(56,189,248,.4);color:var(--accent);font-size:10px;padding:3px 8px;border-radius:6px;letter-spacing:.05em}
+</style>
+</head>
+<body>
+<header>
+  <div class="brand">
+    <div class="logo">D</div>
+    <div>
+      <b>Data<span class="acc">Daddy</span></b>
+      <div class="tag">Putting data centers in their place</div>
+    </div>
+  </div>
+  <nav class="nav">
+    <a class="active">Explore Map</a><a>Scenario Lab</a><a>Compare Sites</a><a>Massachusetts Policy</a><a>Data &amp; Methodology</a>
+  </nav>
+</header>
+<main>
+  <!-- LEFT -->
+  <aside class="left grid-texture">
+    <div class="panel"><div class="ph">Location search</div><div class="pb">
+      <input id="search" type="text" placeholder="Search a Massachusetts municipality…" autocomplete="off" />
+      <div id="results"></div>
+      <div class="note" style="margin-top:6px">Or click anywhere on the map to select a location.</div>
+    </div></div>
+
+    <div class="panel"><div class="ph">Data layers</div><div class="pb" id="layers">
+      <div class="toggle on" data-layer="municipalities"><span><span class="swatch" style="background:#8ba0bf"></span>Municipal boundaries</span><span class="box"></span></div>
+      <div class="toggle on" data-layer="openspace"><span><span class="swatch" style="background:#34d399"></span>Protected &amp; recreational open space</span><span class="box"></span></div>
+      <div class="toggle on" data-layer="ej"><span><span class="swatch" style="background:#a3e635"></span>Environmental justice block groups</span><span class="box"></span></div>
+      <div class="toggle on" data-layer="schools"><span><span class="swatch" style="background:#fbbf24"></span>Schools</span><span class="box"></span></div>
+      <div class="note" style="border:1px dashed var(--border);border-radius:6px;padding:6px">Flood hazard &amp; documented data centers: layer data unavailable — shown as unavailable rather than fabricated.</div>
+    </div></div>
+
+    <div class="panel"><div class="ph">Project assumptions</div><div class="pb" id="controls">
+      <label class="ctl"><div class="row"><span>Project type</span></div>
+        <select id="ptype"><option value="enterprise">Enterprise data center</option><option value="hyperscale">Hyperscale data center</option><option value="ai-compute">AI compute facility</option><option value="university-research">University research compute</option></select></label>
+      <label class="ctl"><div class="row"><span>Peak facility demand</span><span class="val"><span id="mwv">40</span> MW</span></div><input id="mw" type="range" min="5" max="200" step="1" value="40"></label>
+      <label class="ctl"><div class="row"><span>Average utilization</span><span class="val"><span id="utilv">85</span>%</span></div><input id="util" type="range" min="30" max="100" step="1" value="85"></label>
+      <label class="ctl"><div class="row"><span>PUE (illustrative 1.4)</span></div><input id="pue" type="number" min="1" max="3" step="0.05" value="1.4"></label>
+      <label class="ctl"><div class="row"><span>Cooling technology</span></div>
+        <select id="cool"><option value="air">Air cooled</option><option value="water">Water based</option><option value="hybrid" selected>Hybrid</option><option value="closed-loop-liquid">Closed-loop liquid cooling</option></select></label>
+      <label class="ctl"><div class="row"><span>WUE (L/kWh IT)</span></div><input id="wue" type="number" min="0" max="10" step="0.05" value="0.5"></label>
+      <label class="ctl"><div class="row"><span>Clean-energy coverage</span><span class="val"><span id="cleanv">30</span>%</span></div><input id="clean" type="range" min="0" max="100" step="1" value="30"></label>
+      <label class="ctl"><div class="row"><span>Available grid capacity</span></div><input id="cap" type="number" min="0" step="1" placeholder="unknown"></label>
+    </div></div>
+
+    <div class="panel"><div class="ph">Development filters</div><div class="pb">
+      <div class="toggle" id="expansion"><span>Treat as expansion of existing capacity</span><span class="box"></span></div>
+      <div class="row" style="font-size:11px;color:var(--muted);text-transform:uppercase;margin:4px 0">Analysis radius</div>
+      <div class="radii" id="radii"><button data-r="1">1 mi</button><button class="on" data-r="3">3 mi</button><button data-r="5">5 mi</button></div>
+    </div></div>
+  </aside>
+
+  <!-- MAP -->
+  <div class="map-wrap">
+    <div class="demo-badge">DataDaddy demo · live model engine</div>
+    <div id="map"></div>
+    <div class="legend">
+      <div style="font-weight:600;color:var(--muted);text-transform:uppercase;font-size:11px;letter-spacing:.08em;margin-bottom:8px">Screening legend</div>
+      <div class="lg"><span class="sw" style="background:#34d399"></span><div><b>Lower modeled constraints</b><div class="note">Relatively favorable under screening assumptions</div></div></div>
+      <div class="lg"><span class="sw" style="background:#fbbf24"></span><div><b>Constrained</b><div class="note">Environmental / community / infrastructure considerations</div></div></div>
+      <div class="lg"><span class="sw" style="background:#64748b"></span><div><b>Excluded (verified)</b><div class="note">Documented restriction incompatible with project</div></div></div>
+      <div class="lg"><span class="sw hatch"></span><div><b>Data unavailable</b><div class="note">Insufficient info to classify</div></div></div>
+      <div class="banner b-unknown" id="legendgrid" style="margin-top:6px">Grid: Local available capacity unknown</div>
+      <div class="note" style="border-top:1px solid var(--border);padding-top:8px;margin-top:8px">Colors represent a preliminary screening model — <b>not</b> a government permitting decision or approval.</div>
+    </div>
+  </div>
+
+  <!-- RIGHT -->
+  <aside class="right grid-texture" id="right">
+    <div id="empty" class="panel"><div class="pb" style="text-align:center;padding:30px 16px">
+      <div style="font-size:14px;font-weight:600">No location selected</div>
+      <div class="note" style="margin-top:8px">Click a point on the Massachusetts map or search a municipality to open the site intelligence panel and run the simulation.</div>
+    </div></div>
+    <div id="intel" style="display:none;flex-direction:column;gap:12px"></div>
+  </aside>
+</main>
+
+<script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
+<script src="https://unpkg.com/@turf/turf@7.1.0/turf.min.js"></script>
+<script>window.__DD_DATA__={"municipalities":{"type":"FeatureCollection","features":[{"type":"Feature","properties":{"name":"Worcester","provenance":"official","sourceId":"massgis-municipalities"},"geometry":{"type":"Polygon","coordinates":[[[-71.74232680049677,42.2626],[-71.74549464396924,42.27221926398379],[-71.74012325447283,42.28481497165359],[-71.75479005864553,42.29070961398767],[-71.76184601070904,42.30023564321888],[-71.77678407018479,42.3019099052381],[-71.78684704555323,42.312830481614895],[-71.8023,42.30820095425538],[-71.8157972114099,42.30647325620564],[-71.82931008967147,42.30421181164657],[-71.8454838601007,42.302775329554635],[-71.85374664901084,42.293038796669194],[-71.85675603201885,42.28205645751331],[-71.86520485775766,42.273252136962334],[-71.86779732437556,42.2626],[-71.85617723907784,42.25347657535098],[-71.86401657361961,42.24054944199971],[-71.85389356660271,42.23207427843304],[-71.84467775389408,42.22317461689367],[-71.82722265225371,42.224204099655765],[-71.8153244535406,42.220263463231674],[-71.8023,42.21823108486909],[-71.78725758186981,42.213703984035234],[-71.77436971902841,42.21957053933688],[-71.76051239091039,42.2237236475257],[-71.75521673307554,42.234742831146626],[-71.74845710561976,42.24336260887792],[-71.73807986586363,42.251725137724726],[-71.74232680049677,42.2626]]]}},{"type":"Feature","properties":{"name":"Lowell","provenance":"official","sourceId":"massgis-municipalities"},"geometry":{"type":"Polygon","coordinates":[[[-71.26620471156417,42.6334],[-71.26174049247105,42.64256759638818],[-71.26989923039307,42.64984505024931],[-71.27324627284939,42.658663903825556],[-71.28395784937044,42.663218871820106],[-71.29467194604732,42.666370428315304],[-71.30613980203448,42.66590809817495],[-71.3162,42.66795738355103],[-71.32888639661826,42.67439428541727],[-71.33808446516956,42.6669162756317],[-71.34512830394124,42.66015408961108],[-71.35854453661482,42.65830559892099],[-71.3623392821667,42.64978769333944],[-71.37025795578293,42.64250000003076],[-71.36237179961752,42.6334],[-71.3675160686311,42.62476156335626],[-71.3653866117279,42.61592995990508],[-71.35561701938684,42.6102162659462],[-71.3458537465953,42.605974991077034],[-71.33743472396345,42.60087880947478],[-71.32676521727407,42.599260003792914],[-71.3162,42.594047262479876],[-71.30376930610358,42.59323198154227],[-71.29245233521452,42.59703021566249],[-71.28464540750569,42.604217010324966],[-71.2724607852684,42.6076740994161],[-71.26866378043981,42.61651614415989],[-71.26093175208624,42.624096261994545],[-71.26620471156417,42.6334]]]}}]},"openspace":{"type":"FeatureCollection","features":[{"type":"Feature","properties":{"name":"Green Hill Park (representative)","type":"Municipal recreation","provenance":"official","sourceId":"massgis-openspace"},"geometry":{"type":"Polygon","coordinates":[[[-71.76418324674992,42.2746],[-71.76456981230055,42.27872866526026],[-71.76966219144704,42.28108753905967],[-71.77242275509522,42.28407173401168],[-71.77638962688164,42.286723290471805],[-71.7817,42.287676780282695],[-71.78621779374382,42.28491387524513],[-71.79360207739602,42.286751593758574],[-71.79643472766759,42.28254099032698],[-71.79782700466137,42.278486881163566],[-71.79776798879364,42.2746],[-71.80030496770314,42.27011588778991],[-71.79682179295685,42.26645040848356],[-71.79028518432207,42.26583483499955],[-71.78713065854058,42.26220210450884],[-71.7817,42.26293872338522],[-71.77589242229057,42.26134161872627],[-71.77277830232724,42.26549126694871],[-71.76713041173298,42.2667480082899],[-71.7650617115069,42.270589890776634],[-71.76418324674992,42.2746]]]}},{"type":"Feature","properties":{"name":"Cascades / Cook's Pond conservation area (representative)","type":"Conservation","provenance":"official","sourceId":"massgis-openspace"},"geometry":{"type":"Polygon","coordinates":[[[-71.82500760339819,42.2501],[-71.82301281710407,42.25648135796672],[-71.83310262924383,42.25925511813183],[-71.83896484517643,42.26152003127007],[-71.84318615150846,42.26490899596104],[-71.84821789734974,42.271168366534866],[-71.85536196615176,42.26590328343744],[-71.86193720596712,42.26575939398436],[-71.87144052414988,42.26649166452951],[-71.87193772614464,42.25946512113966],[-71.87810831011925,42.25572334950317],[-71.88204378633424,42.2501],[-71.88217547982623,42.24359045854373],[-71.87386175736054,42.23981731919581],[-71.86724688827879,42.23729970380606],[-71.86260038314755,42.233363016433664],[-71.85581324158404,42.231967613884315],[-71.84853508349364,42.23066868047544],[-71.84303473479335,42.235044968621054],[-71.833076549639,42.23363731867792],[-71.83502510394833,42.24186169924117],[-71.82452180630133,42.24404743433365],[-71.82500760339819,42.2501]]]}},{"type":"Feature","properties":{"name":"Lake Quinsigamond shoreline open space (representative)","type":"Recreation","provenance":"official","sourceId":"massgis-openspace"},"geometry":{"type":"Polygon","coordinates":[[[-71.72716322154162,42.2912],[-71.72885276503267,42.29477559397213],[-71.7299912150201,42.29873479058244],[-71.73516653823968,42.300105695478436],[-71.74008487362461,42.299675017528685],[-71.74484235808653,42.30273353612821],[-71.74826419784846,42.29911761327962],[-71.75070057169717,42.29655177614724],[-71.75448667508772,42.29454331812546],[-71.7547012252433,42.2912],[-71.75642583891158,42.28733327736812],[-71.75414684520891,42.28370375194712],[-71.74784668490064,42.28381866185971],[-71.74470376870875,42.28024932925449],[-71.73953665047756,42.28041932023711],[-71.73645757018652,42.28395257246462],[-71.73232904155996,42.285119941120634],[-71.73028922839768,42.288012125409445],[-71.72716322154162,42.2912]]]}},{"type":"Feature","properties":{"name":"Lowell-Dracut-Tyngsborough State Forest (representative)","type":"State forest","provenance":"official","sourceId":"massgis-openspace"},"geometry":{"type":"Polygon","coordinates":[[[-71.31087714724954,42.6501],[-71.31162207512797,42.65542117185871],[-71.32144641380165,42.65709111367445],[-71.32270018250962,42.66158745156249],[-71.32561497975063,42.66719000022709],[-71.3336115619937,42.66337428925988],[-71.33909996117218,42.664971873828236],[-71.345182944991,42.66460337631096],[-71.35111801360969,42.6627942426349],[-71.35223456373112,42.65769811589246],[-71.35348017684579,42.65384119423117],[-71.36196519820524,42.6501],[-71.35599277740104,42.645814822522226],[-71.35184854484474,42.642684802475934],[-71.35034040256362,42.63806745292007],[-71.34431381378461,42.636999875847714],[-71.33874030823723,42.63707253468382],[-71.33282131215935,42.632773071711014],[-71.32800197345954,42.63686391049451],[-71.32328684915774,42.63911176294234],[-71.32177555219447,42.643264851382995],[-71.3120204037425,42.64486506711489],[-71.31087714724954,42.6501]]]}},{"type":"Feature","properties":{"name":"Concord River greenway (representative)","type":"Recreation / greenway","provenance":"official","sourceId":"massgis-openspace"},"geometry":{"type":"Polygon","coordinates":[[[-71.27023593428162,42.6189],[-71.27358955730709,42.623010912000034],[-71.2760811396829,42.626835010561116],[-71.28002244453579,42.63024327824908],[-71.28584532337045,42.631680005329656],[-71.2913733622572,42.629247930947386],[-71.29652997600665,42.628649186161226],[-71.29961328070837,42.625531634440364],[-71.30206399304315,42.62243458211855],[-71.30269800862924,42.6189],[-71.30241381260004,42.61527149000208],[-71.30318608772562,42.61005676010381],[-71.29689435021623,42.608685235441335],[-71.29152412036012,42.60792133474173],[-71.28573773928844,42.60566988969744],[-71.27981758004786,42.6072949565725],[-71.27450109309146,42.60998692383242],[-71.2745105242714,42.61503637112699],[-71.27023593428162,42.6189]]]}}]},"ej":{"type":"FeatureCollection","features":[{"type":"Feature","properties":{"name":"Worcester EJ block group (representative)","criteria":"Income / minority / English isolation","provenance":"official","sourceId":"massgis-ej"},"geometry":{"type":"Polygon","coordinates":[[[-71.79206428315597,42.2589],[-71.78890039384844,42.26403227850265],[-71.79318227115819,42.268113440681525],[-71.79922308189099,42.27032263230703],[-71.8056,42.27084145643227],[-71.8116204623668,42.26968413220285],[-71.81682321342393,42.26722715969681],[-71.82093704865024,42.26361352464048],[-71.82089649343602,42.2589],[-71.81807669828946,42.255065544873695],[-71.81713471641676,42.25034171797935],[-71.81056438401991,42.25000756445024],[-71.8056,42.24589259259259],[-71.79887471021729,42.24685334814828],[-71.79377015035574,42.25012274134367],[-71.79320257146412,42.25508990679268],[-71.79206428315597,42.2589]]]}},{"type":"Feature","properties":{"name":"Worcester EJ block group 2 (representative)","criteria":"Minority","provenance":"official","sourceId":"massgis-ej"},"geometry":{"type":"Polygon","coordinates":[[[-71.76113691059899,42.2701],[-71.75971280511231,42.27396772681119],[-71.76366187970375,42.276507989150176],[-71.76704790393296,42.27950612761242],[-71.7723,42.27804651100376],[-71.77742924900582,42.279286117330834],[-71.78123932632708,42.276731431856604],[-71.78447877616735,42.2738422300624],[-71.78301259049411,42.2701],[-71.78123813289108,42.267353537699755],[-71.77946529597091,42.26478459140824],[-71.77617351750514,42.2631628077824],[-71.7723,42.2620883252818],[-71.76779837445628,42.26203791130491],[-71.76283193864276,42.26307633832714],[-71.75977534307988,42.26625148952541],[-71.76113691059899,42.2701]]]}},{"type":"Feature","properties":{"name":"Lowell EJ block group (representative)","criteria":"Income / minority / English isolation","provenance":"official","sourceId":"massgis-ej"},"geometry":{"type":"Polygon","coordinates":[[[-71.30210505110647,42.6367],[-71.30233020797992,42.64075367388237],[-71.30689501245494,42.64311990394371],[-71.31051669168211,42.645750707155926],[-71.3156,42.64557831454643],[-71.31996398825264,42.644469975228034],[-71.32629401449977,42.64458680575426],[-71.32863056097234,42.64068059326071],[-71.33117480491674,42.6367],[-71.33049949714744,42.63214848160727],[-71.32459403200306,42.630066926577726],[-71.32020414071316,42.62850243914131],[-71.3156,42.626813830738946],[-71.30989807285157,42.626547857021905],[-71.30659113750647,42.63005598913253],[-71.30269072159852,42.63275645630186],[-71.30210505110647,42.6367]]]}}]},"schools":{"type":"FeatureCollection","features":[{"type":"Feature","properties":{"name":"Worcester Technical High School (representative)","level":"High","provenance":"official","sourceId":"massgis-schools"},"geometry":{"type":"Point","coordinates":[-71.8098,42.2708]}},{"type":"Feature","properties":{"name":"South High Community School (representative)","level":"High","provenance":"official","sourceId":"massgis-schools"},"geometry":{"type":"Point","coordinates":[-71.8156,42.2634]}},{"type":"Feature","properties":{"name":"Nelson Place Elementary (representative)","level":"Elementary","provenance":"official","sourceId":"massgis-schools"},"geometry":{"type":"Point","coordinates":[-71.7923,42.283]}},{"type":"Feature","properties":{"name":"Sullivan Middle School (representative)","level":"Middle","provenance":"official","sourceId":"massgis-schools"},"geometry":{"type":"Point","coordinates":[-71.7689,42.2512]}},{"type":"Feature","properties":{"name":"Lowell High School (representative)","level":"High","provenance":"official","sourceId":"massgis-schools"},"geometry":{"type":"Point","coordinates":[-71.3134,42.6389]}},{"type":"Feature","properties":{"name":"Robinson Middle School (representative)","level":"Middle","provenance":"official","sourceId":"massgis-schools"},"geometry":{"type":"Point","coordinates":[-71.3289,42.6278]}},{"type":"Feature","properties":{"name":"Pawtucketville Memorial Elementary (representative)","level":"Elementary","provenance":"official","sourceId":"massgis-schools"},"geometry":{"type":"Point","coordinates":[-71.2978,42.6456]}}]}};
+/* DataDaddy demo — model math ported verbatim from src/lib/model + src/lib/policy.
+   Self-contained: MapLibre + Turf from CDN, GeoJSON from ./data. No build step. */
+
+// ---------- model (mirrors the tested TypeScript engine) ----------
+const HOURS = 8760;
+const COOLING_WUE = { air: 0.1, "closed-loop-liquid": 0.2, hybrid: 0.5, water: 1.8 };
+const COOLING_LABELS = { air: "Air cooled", water: "Water based", hybrid: "Hybrid", "closed-loop-liquid": "Closed-loop liquid cooling" };
+const EO658 = 25;
+
+function computeEnergy(p) {
+  const facility = p.peakFacilityMW * HOURS * p.utilization;
+  const it = facility / p.pue;
+  return { facilityMWh: facility, facilityGWh: facility / 1000, itMWh: it, itGWh: it / 1000, overheadMWh: facility - it };
+}
+function computeClean(e, cov) {
+  cov = Math.min(Math.max(cov, 0), 1);
+  const supplied = e.facilityMWh * cov, uncovered = Math.max(0, e.facilityMWh - supplied);
+  return { requirement: e.facilityMWh, supplied, uncovered, covered: cov };
+}
+function computeWater(e, wue) {
+  const itKWh = e.itMWh * 1000, liters = itKWh * wue;
+  return { wue, annualLiters: liters, dailyLiters: liters / 365 };
+}
+function computeGrid(cap, existing, prior, proposed, diversity) {
+  const cumulative = (existing + prior + proposed) * diversity;
+  if (cap === null || cap === undefined || cap === "" || isNaN(cap))
+    return { known: false, cumulative, remaining: null, shortfall: null, exceeded: false, msg: "Local available capacity unknown" };
+  cap = +cap;
+  const remaining = cap - cumulative, shortfall = Math.max(0, cumulative - cap), exceeded = cumulative > cap;
+  return { known: true, cap, cumulative, remaining, shortfall, exceeded,
+    msg: exceeded ? "Capacity exceeded under current scenario assumptions" : "Within modeled scenario capacity" };
+}
+function exceedsEO658(mw) { return mw > EO658; }
+function clamp(x, lo, hi) { return Math.min(Math.max(x, lo), hi); }
+
+// EO 658 evaluation (threshold logic + categorized findings, mirrors eo658.ts)
+function evaluatePolicy(p) {
+  const mw = p.peakFacilityMW, exceeds = exceedsEO658(mw), f = [];
+  if (exceeds) f.push({ t: "EO 658 large-project scope (>25 MW)", s: "potentially-applicable", b: `Peak ${mw} MW is greater than the 25 MW threshold.` });
+  else if (mw === 25) f.push({ t: "EO 658 scope (at 25 MW)", s: "more-info-required", b: "Peak equals 25 MW — NOT greater than the threshold." });
+  else f.push({ t: "EO 658 scope (<25 MW)", s: "not-triggered", b: `Peak ${mw} MW is below the 25 MW threshold.` });
+  if (p.isExpansion) f.push({ t: "Applicability to expansions", s: "more-info-required", b: "Flagged as an expansion — evaluated under the order's expansion language." });
+  if (p.projectType === "university-research") f.push({ t: "Possible university exemption pathway", s: "more-info-required", b: "University research facilities may qualify for exemption when approved under the stated process." });
+  const inScope = exceeds, st = inScope ? "potentially-applicable" : "not-triggered";
+  [["Community benefits agreement", "Host community engagement"],
+   ["Clean-electricity procurement", "RECs alone may not satisfy incremental-generation expectations"],
+   ["Water quantity & quality", "Actual water source/withdrawal data"],
+   ["Ratepayer protection & cost allocation", "Approved cost-allocation methodology"],
+   ["Reporting & disclosure", "Implementation guidance pending"]].forEach(([t]) => f.push({ t, s: st, b: inScope ? "In-scope large project." : "Below scope threshold under current scenario." }));
+  f.push({ t: "Implementation rules & guidance", s: "guidance-under-development", b: "Some EO 658 implementation measures are still being developed as of Oct 2026 — not finalized regulation." });
+  const summary = exceeds ? `At ${mw} MW the scenario is above EO 658's >25 MW threshold; several requirements are potentially applicable.`
+    : mw === 25 ? `At exactly 25 MW the scenario is not automatically within EO 658's >25 MW scope; more information required.`
+    : `At ${mw} MW the scenario is below EO 658's >25 MW threshold under current assumptions.`;
+  return { exceeds, mw, findings: f, summary };
+}
+
+// Scoring (weighted, unknown components excluded → lower evidence coverage)
+const WEIGHTS = { landEnv: .30, infraFit: .25, community: .20, resource: .15, dataReadiness: .10 };
+function scoreSite(geo, grid, p) {
+  const C = [], cons = [], adv = [], miss = [];
+  let landEnv = null;
+  if (geo.gs.ok) { const cov = geo.gs.coverage; landEnv = clamp(100 - cov * 1.5, 0, 100);
+    (cov > 25 ? cons : adv).push(`${cov > 25 ? "High" : "Modest"} mapped open space (${cov.toFixed(1)}%) nearby`); }
+  else miss.push("Land-use: open-space layer unavailable");
+  let infraFit = null;
+  if (grid.known) { if (grid.exceeded) { infraFit = 0; cons.push(`Modeled capacity exceeded by ${grid.shortfall.toFixed(1)} MW`); }
+    else { infraFit = clamp(grid.remaining / Math.max(1, grid.cap) * 100, 0, 100); adv.push("Within modeled scenario grid capacity"); } }
+  else miss.push("Infrastructure: available capacity unknown (not defaulted)");
+  let community = null;
+  if (geo.sc.ok || geo.ej.ok) { let s = 100;
+    if (geo.sc.ok) { s -= Math.min(40, geo.sc.w1 * 20 + geo.sc.w3 * 5); if (geo.sc.w1 > 0) cons.push(`${geo.sc.w1} mapped school(s) within 1 mile`); }
+    if (geo.ej.ok && geo.ej.overlap) { s -= 30; cons.push("Within a designated Environmental Justice block group"); }
+    community = clamp(s, 0, 100); } else miss.push("Community: layers unavailable");
+  const pueScore = clamp((2 - p.pue) / (2 - 1.1), 0, 1), resource = clamp((pueScore * .5 + p.cleanEnergyCoverage * .5) * 100, 0, 100);
+  if (p.cleanEnergyCoverage >= .6) adv.push("High assumed clean-energy coverage");
+  if (p.pue <= 1.3) adv.push("Efficient assumed PUE");
+  const signals = [geo.gs.ok, geo.sc.ok, geo.ej.ok, false, grid.known], known = signals.filter(Boolean).length;
+  const dataReadiness = clamp(known / signals.length * 100, 0, 100);
+  if (!grid.known) cons.push("Local available grid capacity unknown");
+  C.push(["landEnv", landEnv], ["infraFit", infraFit], ["community", community], ["resource", resource], ["dataReadiness", dataReadiness]);
+  const incl = C.filter(([, v]) => v !== null);
+  const totalMass = C.reduce((a, [k]) => a + WEIGHTS[k], 0);
+  const inclMass = incl.reduce((a, [k]) => a + WEIGHTS[k], 0);
+  const score = inclMass > 0 ? clamp(incl.reduce((a, [k, v]) => a + (WEIGHTS[k] / inclMass) * v, 0), 0, 100) : 0;
+  return { score, coverage: totalMass > 0 ? inclMass / totalMass : 0, constraints: cons.slice(0, 3), advantages: adv.slice(0, 3), missing: miss };
+}
+
+// ---------- formatting ----------
+const fmt = (n, d = 0) => (n).toLocaleString("en-US", { minimumFractionDigits: d, maximumFractionDigits: d });
+const gwh = m => fmt(m / 1000, 2) + " GWh";
+const liters = l => l >= 1e6 ? fmt(l / 1e6, 2) + " million L" : fmt(l, 0) + " L";
+const chip = p => `<span class="chip c-${p}">${({ official: "Official source", calculated: "Calculated", assumption: "Scenario assumption", estimated: "Estimated", unknown: "Unknown" })[p]}</span>`;
+
+// ---------- state ----------
+const MUNI = [
+  ["Worcester", "Worcester", 42.2626, -71.8023], ["Lowell", "Middlesex", 42.6334, -71.3162],
+  ["Boston", "Suffolk", 42.3601, -71.0589], ["Springfield", "Hampden", 42.1015, -72.5898],
+  ["Cambridge", "Middlesex", 42.3736, -71.1097], ["Lawrence", "Essex", 42.707, -71.1631],
+  ["Framingham", "Middlesex", 42.2793, -71.4162], ["Fitchburg", "Worcester", 42.5834, -71.8023],
+  ["Leominster", "Worcester", 42.525, -71.7598], ["Pittsfield", "Berkshire", 42.4501, -73.2454],
+];
+let layersData = {}, site = null;
+const project = { projectType: "enterprise", isExpansion: false, peakFacilityMW: 40, utilization: .85, pue: 1.4, cooling: "hybrid", wue: .5, cleanEnergyCoverage: .3 };
+let gridCap = null;
+const toggles = { municipalities: true, openspace: true, ej: true, schools: true };
+
+// ---------- geo analysis (Turf) ----------
+function analyze() {
+  if (!site) return null;
+  const os = layersData.openspace, sc = layersData.schools, ej = layersData.ej;
+  const circle = turf.circle([site.lng, site.lat], site.r, { units: "miles", steps: 64 });
+  const areaSqMi = turf.area(circle) / 2589988.110336;
+  // green space
+  let gsOk = !!(os && os.features.length), inter = 0;
+  if (gsOk) for (const f of os.features) { try { const c = turf.intersect(turf.featureCollection([circle, f])); if (c) inter += turf.area(c); } catch {} }
+  inter = Math.min(inter, turf.area(circle));
+  const gs = { ok: gsOk, areaSqMi, acres: inter / 4046.8564224, coverage: gsOk ? clamp(inter / turf.area(circle) * 100, 0, 100) : 0 };
+  // schools
+  let scOk = !!(sc && sc.features.length), w1 = 0, w3 = 0, near = Infinity, nearName = null;
+  if (scOk) { const from = turf.point([site.lng, site.lat]);
+    for (const f of sc.features) { const d = turf.distance(from, f, { units: "miles" }); if (d <= 1) w1++; if (d <= 3) w3++; if (d < near) { near = d; nearName = f.properties.name; } } }
+  const scR = { ok: scOk, w1, w3, near: isFinite(near) ? near : null, nearName };
+  // ej
+  let ejOk = !!(ej && ej.features.length), overlap = false, ejName = null;
+  if (ejOk) { const pt = turf.point([site.lng, site.lat]);
+    for (const f of ej.features) { try { if (turf.booleanPointInPolygon(pt, f)) { overlap = true; ejName = f.properties.name; } } catch {} } }
+  return { gs, sc: scR, ej: { ok: ejOk, overlap, name: ejName } };
+}
+
+// ---------- render right panel ----------
+function render() {
+  const legendGrid = document.getElementById("legendgrid");
+  const e = computeEnergy(project), cl = computeClean(e, project.cleanEnergyCoverage), w = computeWater(e, project.wue);
+  const g = computeGrid(gridCap, 0, 0, project.peakFacilityMW, 1);
+  legendGrid.className = "banner " + (!g.known ? "b-unknown" : g.exceeded ? "b-risk" : "b-ok");
+  legendGrid.textContent = "Grid: " + g.msg;
+
+  if (!site) { document.getElementById("empty").style.display = ""; document.getElementById("intel").style.display = "none"; return; }
+  document.getElementById("empty").style.display = "none";
+  const box = document.getElementById("intel"); box.style.display = "flex";
+  const geo = analyze(), sc = scoreSite(geo, g, project), pol = evaluatePolicy(project);
+  const scoreAcc = sc.score >= 66 ? "acc-fav" : sc.score >= 40 ? "acc-cau" : "acc-risk";
+
+  const findingsHtml = pol.findings.filter(f => f.s !== "not-triggered").map(f => {
+    const st = { "potentially-applicable": ["Potentially applicable", "acc-cau"], "more-info-required": ["More information required", "acc-acc"], "guidance-under-development": ["Guidance under development", "acc-mut"] }[f.s];
+    return `<div class="finding"><div style="display:flex;justify-content:space-between;gap:8px"><span class="ttl">${f.t}</span><span class="chip ${st[1] === 'acc-cau' ? 'c-assumption' : st[1] === 'acc-acc' ? 'c-calculated' : 'c-unknown'}">${st[0]}</span></div><div class="note" style="margin-top:4px">${f.b}</div></div>`;
+  }).join("");
+
+  box.innerHTML = `
+  <div class="panel"><div class="ph">Site intelligence</div><div class="pb">
+    <div style="font-weight:600">${site.name}</div>
+    <div class="tabular note" style="margin-top:2px">${site.lat.toFixed(4)}, ${site.lng.toFixed(4)} · radius ${site.r} mi</div>
+    <div class="metrics" style="margin-top:8px">
+      ${metric("Screening score", fmt(sc.score, 0), "Evidence coverage " + fmt(sc.coverage * 100, 0) + "%", "estimated", scoreAcc)}
+      ${metric("Annual electricity", gwh(e.facilityMWh), "Total facility demand", "calculated", "acc-acc")}
+    </div>
+    <div class="note" style="margin-top:8px">Screening score is a product-defined preliminary model, not a permitting decision. Missing inputs lower evidence coverage rather than inflating the score.</div>
+  </div></div>
+
+  <div class="panel"><div class="ph">Environmental context</div><div class="pb"><div class="metrics">
+    ${metric(`Open space (${site.r} mi)`, geo.gs.ok ? fmt(geo.gs.coverage, 1) + "%" : "Unknown", geo.gs.ok ? fmt(geo.gs.acres, 0) + " ac mapped" : "Layer unavailable", geo.gs.ok ? "official" : "unknown", geo.gs.ok ? "acc-fav" : "acc-mut")}
+    ${metric("Analysis area", fmt(geo.gs.areaSqMi, 1) + " mi²", geo.gs.ok ? fmt(geo.gs.acres / geo.gs.areaSqMi, 0) + " ac/mi²" : "", "calculated", "acc-acc")}
+    ${metric("Schools ≤ 1 mi", geo.sc.ok ? fmt(geo.sc.w1, 0) : "Unknown", geo.sc.ok ? fmt(geo.sc.w3, 0) + " within 3 mi" : "Layer unavailable", geo.sc.ok ? "official" : "unknown", geo.sc.ok && geo.sc.w1 > 0 ? "acc-cau" : "acc-mut")}
+    ${metric("Nearest school", geo.sc.near != null ? fmt(geo.sc.near, 2) + " mi" : "Unknown", geo.sc.nearName || "", geo.sc.ok ? "calculated" : "unknown", "acc-acc")}
+    ${metric("Environmental justice", geo.ej.ok ? (geo.ej.overlap ? "Within EJ" : "No overlap") : "Unknown", geo.ej.overlap ? geo.ej.name : (geo.ej.ok ? "In mapped subset" : "Layer unavailable"), geo.ej.ok ? "official" : "unknown", geo.ej.overlap ? "acc-cau" : "acc-mut")}
+    ${metric("Flood hazard", "Unknown", "Layer unavailable", "unknown", "acc-mut")}
+  </div><div class="note" style="margin-top:8px">Open-space datasets do not include every tree, lawn, or undeveloped parcel. Absence of mapped features is not proof of absence on the ground.</div></div></div>
+
+  <div class="panel"><div class="ph">Energy &amp; water</div><div class="pb"><div class="metrics">
+    ${metric("Facility demand", gwh(e.facilityMWh), fmt(e.facilityMWh, 0) + " MWh/yr", "calculated", "acc-acc")}
+    ${metric("IT demand (via PUE)", gwh(e.itMWh), "Distinct from facility", "calculated", "acc-acc")}
+    ${metric("Clean-energy gap", gwh(cl.uncovered), fmt(cl.covered * 100, 0) + "% covered (assumption)", "estimated", "acc-cau")}
+    ${metric("Modeled water use", liters(w.annualLiters), liters(w.dailyLiters) + "/day", "estimated", "acc-acc")}
+  </div></div></div>
+
+  <div class="panel"><div class="ph">Grid capacity</div><div class="pb">
+    <div class="banner ${!g.known ? "b-unknown" : g.exceeded ? "b-risk" : "b-ok"}">${g.msg}</div>
+    ${g.known ? `<div class="metrics" style="margin-top:8px">${metric("Cumulative demand", fmt(g.cumulative, 1) + " MW", "", "assumption", "acc-cau")}${metric(g.exceeded ? "Shortfall" : "Remaining", fmt(g.exceeded ? g.shortfall : g.remaining, 1) + " MW", "", "calculated", g.exceeded ? "acc-risk" : "acc-fav")}</div>` : ""}
+    <div class="note" style="margin-top:8px">Capacity is a simulated scenario constraint, not verified grid saturation.</div>
+  </div></div>
+
+  <div class="panel"><div class="ph">Massachusetts Policy Navigator</div><div class="pb">
+    <div class="banner b-unknown" style="color:var(--text)">${pol.summary}</div>
+    ${findingsHtml}
+    <div class="note" style="margin-top:8px">Some EO 658 implementation rules are still under development as of Oct 2026. Pending measures are not finalized regulation.</div>
+  </div></div>
+
+  <div class="panel"><div class="ph">DataDaddy Intelligence</div><div class="pb">
+    <div class="note">Grounded analyst (deterministic): at ${fmt(project.peakFacilityMW, 0)} MW this ${project.projectType} draws ${gwh(e.facilityMWh)}/yr; modeled water ~${liters(w.annualLiters)}. Screening ${fmt(sc.score, 0)}/100 at ${fmt(sc.coverage * 100, 0)}% evidence coverage. Biggest levers: peak demand, clean-energy coverage, cooling choice.</div>
+  </div></div>`;
+}
+function metric(lab, num, sub, prov, acc) {
+  return `<div class="metric"><div class="lab">${lab}${prov ? chip(prov) : ""}</div><div class="num ${acc}">${num}</div>${sub ? `<div class="sub">${sub}</div>` : ""}</div>`;
+}
+
+// ---------- map ----------
+const map = new maplibregl.Map({
+  container: "map",
+  style: { version: 8, sources: { osm: { type: "raster", tiles: ["https://tile.openstreetmap.org/{z}/{x}/{y}.png"], tileSize: 256, attribution: "© OpenStreetMap contributors" } }, layers: [{ id: "osm", type: "raster", source: "osm" }] },
+  center: [-71.8, 42.3], zoom: 8,
+});
+map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "top-right");
+map.addControl(new maplibregl.ScaleControl({ unit: "imperial" }), "bottom-left");
+
+async function loadLayers(){ layersData = window.__DD_DATA__; }
+
+map.on("load", async () => {
+  await loadLayers();
+  const empty = { type: "FeatureCollection", features: [] };
+  ["municipalities", "openspace", "ej", "schools", "radius", "selection"].forEach(s => map.addSource(s, { type: "geojson", data: layersData[s] || empty }));
+  map.addLayer({ id: "municipalities-line", type: "line", source: "municipalities", paint: { "line-color": "#8ba0bf", "line-width": 1.2, "line-opacity": .8 } });
+  map.addLayer({ id: "openspace-fill", type: "fill", source: "openspace", paint: { "fill-color": "#34d399", "fill-opacity": .28 } });
+  map.addLayer({ id: "openspace-line", type: "line", source: "openspace", paint: { "line-color": "#34d399", "line-width": .8 } });
+  map.addLayer({ id: "ej-fill", type: "fill", source: "ej", paint: { "fill-color": "#a3e635", "fill-opacity": .18 } });
+  map.addLayer({ id: "ej-line", type: "line", source: "ej", paint: { "line-color": "#a3e635", "line-width": .8, "line-dasharray": [2, 2] } });
+  map.addLayer({ id: "radius-fill", type: "fill", source: "radius", paint: { "fill-color": "#38bdf8", "fill-opacity": .08 } });
+  map.addLayer({ id: "radius-line", type: "line", source: "radius", paint: { "line-color": "#38bdf8", "line-width": 1.5, "line-dasharray": [3, 2] } });
+  map.addLayer({ id: "schools-circle", type: "circle", source: "schools", paint: { "circle-radius": 4, "circle-color": "#fbbf24", "circle-stroke-color": "#0a0f1a", "circle-stroke-width": 1 } });
+  map.addLayer({ id: "selection-circle", type: "circle", source: "selection", paint: { "circle-radius": 7, "circle-color": "#38bdf8", "circle-stroke-color": "#e5ecf5", "circle-stroke-width": 2 } });
+  map.on("click", e => selectSite(`Selected location (${e.lngLat.lat.toFixed(4)}, ${e.lngLat.lng.toFixed(4)})`, e.lngLat.lat, e.lngLat.lng));
+  render();
+});
+
+function updateSelection() {
+  if (!map.getSource("selection")) return;
+  if (!site) { map.getSource("selection").setData({ type: "FeatureCollection", features: [] }); map.getSource("radius").setData({ type: "FeatureCollection", features: [] }); return; }
+  map.getSource("selection").setData(turf.point([site.lng, site.lat]));
+  map.getSource("radius").setData(turf.circle([site.lng, site.lat], site.r, { units: "miles", steps: 64 }));
+  map.easeTo({ center: [site.lng, site.lat], zoom: Math.max(map.getZoom(), 11), duration: 600 });
+}
+function selectSite(name, lat, lng) { site = { name, lat, lng, r: site ? site.r : 3 }; updateSelection(); render(); }
+
+// ---------- controls wiring ----------
+const $ = id => document.getElementById(id);
+$("mw").oninput = e => { project.peakFacilityMW = +e.target.value; $("mwv").textContent = e.target.value; render(); };
+$("util").oninput = e => { project.utilization = +e.target.value / 100; $("utilv").textContent = e.target.value; render(); };
+$("pue").oninput = e => { project.pue = +e.target.value || 1.4; render(); };
+$("cool").onchange = e => { project.cooling = e.target.value; project.wue = COOLING_WUE[e.target.value]; $("wue").value = project.wue; render(); };
+$("wue").oninput = e => { project.wue = +e.target.value || 0; render(); };
+$("clean").oninput = e => { project.cleanEnergyCoverage = +e.target.value / 100; $("cleanv").textContent = e.target.value; render(); };
+$("ptype").onchange = e => { project.projectType = e.target.value; render(); };
+$("cap").oninput = e => { gridCap = e.target.value === "" ? null : +e.target.value; render(); };
+$("expansion").onclick = function () { project.isExpansion = !project.isExpansion; this.classList.toggle("on", project.isExpansion); render(); };
+document.querySelectorAll("#radii button").forEach(b => b.onclick = () => {
+  document.querySelectorAll("#radii button").forEach(x => x.classList.remove("on")); b.classList.add("on");
+  if (site) { site.r = +b.dataset.r; updateSelection(); render(); }
+});
+document.querySelectorAll("#layers .toggle").forEach(t => t.onclick = () => {
+  const l = t.dataset.layer; toggles[l] = !toggles[l]; t.classList.toggle("on", toggles[l]);
+  const vis = toggles[l] ? "visible" : "none";
+  ({ municipalities: ["municipalities-line"], openspace: ["openspace-fill", "openspace-line"], ej: ["ej-fill", "ej-line"], schools: ["schools-circle"] })[l]
+    .forEach(id => map.getLayer(id) && map.setLayoutProperty(id, "visibility", vis));
+});
+$("search").oninput = e => {
+  const q = e.target.value.trim().toLowerCase(), box = $("results");
+  if (!q) { box.innerHTML = ""; return; }
+  const r = MUNI.filter(m => m[0].toLowerCase().includes(q) || m[1].toLowerCase().includes(q)).slice(0, 8);
+  box.innerHTML = r.map(m => `<div class="toggle" style="cursor:pointer" data-lat="${m[2]}" data-lng="${m[3]}" data-n="${m[0]}"><span>${m[0]}</span><span class="note">${m[1]} Co.</span></div>`).join("");
+  box.querySelectorAll(".toggle").forEach(el => el.onclick = () => { selectSite(el.dataset.n, +el.dataset.lat, +el.dataset.lng); $("search").value = ""; box.innerHTML = ""; });
+};
+</script>
+</body>
+</html>
