@@ -41,11 +41,11 @@ export default function ComparePage() {
   const siteB = siteFromMuni(bName);
 
   const resA = useMemo(
-    () => runSimulation({ site: siteA, project: DEFAULT_PROJECT, grid: { mode: "public-screening", availableCapacityMW: null, existingLoadMW: 0, priorDataCenterMW: 0, diversityFactor: 1 }, cost: null, weights, geo: geoFor(siteA, layers) }),
+    () => runSimulation({ site: siteA, project: DEFAULT_PROJECT, grid: { mode: "public-screening", availableCapacityMW: null, existingLoadMW: 0, priorDataCenterMW: 0, portfolio: [], diversityFactor: 1 }, cost: null, weights, geo: geoFor(siteA, layers) }),
     [aName, layers, weights],
   );
   const resB = useMemo(
-    () => runSimulation({ site: siteB, project: DEFAULT_PROJECT, grid: { mode: "public-screening", availableCapacityMW: null, existingLoadMW: 0, priorDataCenterMW: 0, diversityFactor: 1 }, cost: null, weights, geo: geoFor(siteB, layers) }),
+    () => runSimulation({ site: siteB, project: DEFAULT_PROJECT, grid: { mode: "public-screening", availableCapacityMW: null, existingLoadMW: 0, priorDataCenterMW: 0, portfolio: [], diversityFactor: 1 }, cost: null, weights, geo: geoFor(siteB, layers) }),
     [bName, layers, weights],
   );
 

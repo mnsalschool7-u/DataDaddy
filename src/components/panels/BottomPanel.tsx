@@ -160,6 +160,59 @@ export function BottomPanel() {
                 format={(v) => fmtPct(v)}
                 onChange={(v) => updateGrid({ diversityFactor: v })}
               />
+              <div className="col-span-2 md:col-span-3">
+                <div className="mb-1 flex items-center justify-between text-[11px] uppercase tracking-wide text-muted">
+                  <span>Cumulative data centers in area (§7)</span>
+                  <button
+                    onClick={() =>
+                      updateGrid({
+                        portfolio: [
+                          ...grid.portfolio,
+                          { id: `pf-${Date.now()}`, label: `Project ${String.fromCharCode(65 + grid.portfolio.length)}`, peakMW: 20 },
+                        ],
+                      })
+                    }
+                    className="rounded border border-accent/40 bg-accent/10 px-2 py-0.5 text-[10px] font-medium text-accent hover:bg-accent/20"
+                  >
+                    + Add facility
+                  </button>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {grid.portfolio.length === 0 && (
+                    <span className="text-[10px] text-muted">
+                      No additional facilities. Add several to model combined development pressure (e.g. 20 + 35 + 50 MW).
+                    </span>
+                  )}
+                  {grid.portfolio.map((pf) => (
+                    <div key={pf.id} className="flex items-center gap-1 rounded-md border border-border bg-panel-2/40 px-2 py-1 text-xs">
+                      <span className="text-muted">{pf.label}</span>
+                      <input
+                        type="number"
+                        value={pf.peakMW}
+                        min={0}
+                        step={5}
+                        onChange={(e) =>
+                          updateGrid({
+                            portfolio: grid.portfolio.map((x) =>
+                              x.id === pf.id ? { ...x, peakMW: Number(e.target.value) || 0 } : x,
+                            ),
+                          })
+                        }
+                        className="tabular w-14 rounded border border-border bg-panel px-1 py-0.5 text-content"
+                        aria-label={`${pf.label} MW`}
+                      />
+                      <span className="text-muted">MW</span>
+                      <button
+                        onClick={() => updateGrid({ portfolio: grid.portfolio.filter((x) => x.id !== pf.id) })}
+                        className="text-risk hover:opacity-70"
+                        aria-label={`Remove ${pf.label}`}
+                      >
+                        ×
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
               <div className="col-span-2 self-end md:col-span-3">
                 <div
                   className={cx(

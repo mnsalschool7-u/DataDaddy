@@ -28,8 +28,15 @@ export function computeGrid(
   scenario: GridScenario,
   newProposedPeakMW: number,
 ): GridResult {
+  const portfolioMW = (scenario.portfolio ?? []).reduce(
+    (sum, f) => sum + f.peakMW,
+    0,
+  );
   const rawCumulative =
-    scenario.existingLoadMW + scenario.priorDataCenterMW + newProposedPeakMW;
+    scenario.existingLoadMW +
+    scenario.priorDataCenterMW +
+    portfolioMW +
+    newProposedPeakMW;
   const cumulativeProposedMW = rawCumulative * scenario.diversityFactor;
 
   const capacityKnown = scenario.availableCapacityMW !== null;

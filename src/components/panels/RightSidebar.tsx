@@ -151,7 +151,31 @@ export function RightSidebar() {
             accent="accent"
             provenance="estimated"
           />
+          {result.battery.profile !== "none" && (
+            <>
+              <Metric
+                label="Peak grid draw (w/ battery)"
+                value={fmtMW(result.battery.effectivePeakGridMW)}
+                sub={`${fmtMW(result.battery.peakShavedMW)} shaved by dispatch`}
+                accent="favorable"
+                provenance="estimated"
+              />
+              <Metric
+                label="Battery charging loss"
+                value={`+${fmtMWh(result.battery.annualChargingLossMWh)}`}
+                sub="round-trip losses add grid energy"
+                accent="caution"
+                provenance="estimated"
+              />
+            </>
+          )}
         </div>
+        {result.battery.profile !== "none" && (
+          <p className="px-2.5 pb-2.5 text-[10px] leading-snug text-muted">
+            Battery shifts demand in time (shaves peak), it does not remove grid load —
+            total grid energy rises slightly from charging losses.
+          </p>
+        )}
       </Panel>
 
       {/* Grid scenario */}
@@ -169,6 +193,13 @@ export function RightSidebar() {
           >
             {result.grid.statusMessage}
           </div>
+          {grid.portfolio.length > 0 && (
+            <div className="mt-2 rounded-md border border-border bg-panel-2/40 px-2.5 py-1.5 text-[11px] text-muted">
+              Cumulative with {grid.portfolio.length} other facility(ies):{" "}
+              <span className="text-content">{fmtMW(grid.portfolio.reduce((s, p) => s + p.peakMW, 0))}</span> added
+              {grid.diversityFactor < 1 && ` · diversity ${Math.round(grid.diversityFactor * 100)}%`}
+            </div>
+          )}
           {result.grid.capacityKnown && (
             <div className="mt-2 grid grid-cols-2 gap-2">
               <Metric

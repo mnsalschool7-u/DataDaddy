@@ -74,14 +74,24 @@ export const Site = z.object({
 });
 export type Site = z.infer<typeof Site>;
 
+/** A previously-modeled hypothetical data center sharing the area (§7 cumulative). */
+export const PortfolioFacility = z.object({
+  id: z.string(),
+  label: z.string(),
+  peakMW: z.number().min(0).max(1000),
+});
+export type PortfolioFacility = z.infer<typeof PortfolioFacility>;
+
 export const GridScenario = z.object({
   mode: z.enum(["public-screening", "hypothetical"]),
   /** User-supplied available capacity in MW. null => unknown (never defaulted). */
   availableCapacityMW: z.number().min(0).max(100000).nullable(),
   /** Existing assumed load in MW within the modeled area. */
   existingLoadMW: z.number().min(0).max(100000).default(0),
-  /** Additional previously-modeled data center demand in MW. */
+  /** Additional previously-modeled data center demand in MW (aggregate shortcut). */
   priorDataCenterMW: z.number().min(0).max(100000).default(0),
+  /** Named cumulative data centers in the area (§7). */
+  portfolio: z.array(PortfolioFacility).default([]),
   /** Diversity/coincidence factor applied to cumulative peak, 0..1. */
   diversityFactor: z.number().min(0).max(1).default(1),
 });

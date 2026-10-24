@@ -9,6 +9,7 @@ function scenario(overrides: Partial<GridScenario>): GridScenario {
     availableCapacityMW: 100,
     existingLoadMW: 0,
     priorDataCenterMW: 0,
+    portfolio: [],
     diversityFactor: 1,
     ...overrides,
   };
@@ -38,6 +39,36 @@ describe("computeGrid — integrity", () => {
     expect(r.statusMessage).toBe(
       "Capacity exceeded under current scenario assumptions",
     );
+  });
+
+  it("includes portfolio facilities in cumulative demand (§7)", () => {
+    // Project A 20 + B 35 + C 50 in portfolio, plus a new 20 MW proposal = 125.
+    const r = computeGrid(
+      scenario({
+        availableCapacityMW: 90,
+        portfolio: [
+          { id: "a", label: "A", peakMW: 20 },
+          { id: "b", label: "B", peakMW: 35 },
+          { id: "c", label: "C", peakMW: 50 },
+        ],
+      }),
+      0,
+    );
+    expect(r.cumulativeProposedMW).toBeCloseTo(105, 6);
+    expect(r.exceeded).toBe(true);
+    expect(r.shortfallMW).toBeCloseTo(15, 6);
+  });
+
+  it("applies the diversity factor to the cumulative portfolio peak", () => {
+    const r = computeGrid(
+      scenario({
+        availableCapacityMW: 200,
+        diversityFactor: 0.8,
+        portfolio: [{ id: "a", label: "A", peakMW: 100 }],
+      }),
+      0,
+    );
+    expect(r.cumulativeProposedMW).toBeCloseTo(80, 6);
   });
 });
 

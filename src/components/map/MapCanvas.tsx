@@ -50,6 +50,7 @@ export function MapCanvas({ toggles }: { toggles: LayerToggles }) {
       map.addSource("schools", { type: "geojson", data: empty });
       map.addSource("radius", { type: "geojson", data: empty });
       map.addSource("selection", { type: "geojson", data: empty });
+      map.addSource("gridscenario", { type: "geojson", data: empty });
 
       map.addLayer({
         id: "municipalities-line",
@@ -80,6 +81,18 @@ export function MapCanvas({ toggles }: { toggles: LayerToggles }) {
         type: "line",
         source: "ej",
         paint: { "line-color": "#a3e635", "line-width": 0.8, "line-dasharray": [2, 2] },
+      });
+      // Grid-scenario greyout: shaded when modeled capacity is exceeded (§5.2/§7).
+      map.addLayer({
+        id: "gridscenario-fill",
+        type: "fill",
+        source: "gridscenario",
+        paint: {
+          "fill-color": ["get", "color"],
+          "fill-opacity": 0.35,
+          "fill-outline-color": "#f87171",
+        },
+        layout: { visibility: "none" },
       });
       map.addLayer({
         id: "radius-fill",
@@ -177,7 +190,26 @@ export function MapCanvas({ toggles }: { toggles: LayerToggles }) {
     vis("ej-fill", toggles.ej);
     vis("ej-line", toggles.ej);
     vis("schools-circle", toggles.schools);
+    vis("gridscenario-fill", toggles.gridScenario);
   }, [ready, toggles]);
+
+  // Grid-scenario greyout zone around the site (only when capacity is exceeded).
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !ready) return;
+    const src = map.getSource("gridscenario") as GeoJSONSource | undefined;
+    if (!src) return;
+    if (!site || !result.grid.capacityKnown || !result.grid.exceeded) {
+      src.setData({ type: "FeatureCollection", features: [] });
+      return;
+    }
+    const zone = turf.circle([site.lng, site.lat], site.radiusMiles + 2, {
+      units: "miles",
+      steps: 64,
+    }) as GeoJSON.Feature;
+    zone.properties = { color: "#64748b" };
+    src.setData(zone);
+  }, [ready, site, result.grid.capacityKnown, result.grid.exceeded]);
 
   // selection marker + radius circle
   useEffect(() => {

@@ -7,6 +7,7 @@ import type {
 } from "@/lib/schemas";
 import { computeEnergy, computeCleanEnergy, type EnergyResult, type CleanEnergyResult } from "./energy";
 import { computeWater, waterSensitivity, type WaterResult } from "./water";
+import { computeBattery, type BatteryResult } from "./battery";
 import { computeGrid, type GridResult } from "./grid";
 import { computeCost, type CostResult } from "./cost";
 import { scoreSite, type SiteAssessment, type ComponentInput } from "./scoring";
@@ -27,6 +28,7 @@ export interface SimulationResult {
   cleanEnergy: CleanEnergyResult;
   water: WaterResult;
   waterSensitivity: ReturnType<typeof waterSensitivity>;
+  battery: BatteryResult;
   grid: GridResult;
   cost: CostResult | null;
   policy: PolicyEvaluation;
@@ -133,7 +135,11 @@ export function runSimulation(inputs: SimulationInputs): SimulationResult {
   const cleanEnergy = computeCleanEnergy(energy, inputs.project.cleanEnergyCoverage);
   const water = computeWater(energy, inputs.project.wue);
   const sensitivity = waterSensitivity(energy);
-  const grid = computeGrid(inputs.grid, inputs.project.peakFacilityMW);
+  const battery = computeBattery(inputs.project, energy);
+  // Battery dispatch shaves the facility's PEAK grid draw (demand shifted, not
+  // removed). The grid scenario sees the effective peak. Total energy is unchanged
+  // except for round-trip losses captured in battery.annualGridEnergyMWh.
+  const grid = computeGrid(inputs.grid, battery.effectivePeakGridMW);
   const cost = inputs.cost ? computeCost(inputs.cost) : null;
   const policy = evaluatePolicy(inputs.project);
 
@@ -149,5 +155,5 @@ export function runSimulation(inputs: SimulationInputs): SimulationResult {
     hardExclusion: null,
   });
 
-  return { energy, cleanEnergy, water, waterSensitivity: sensitivity, grid, cost, policy, assessment };
+  return { energy, cleanEnergy, water, waterSensitivity: sensitivity, battery, grid, cost, policy, assessment };
 }

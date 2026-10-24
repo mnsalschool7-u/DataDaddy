@@ -116,9 +116,17 @@ export function LeftSidebar({
             onChange={(v) => setToggle("schools", v)}
             swatch={<Swatch color="#fbbf24" />}
           />
+          <Toggle
+            label="Grid-scenario greyout (capacity exceeded)"
+            checked={toggles.gridScenario}
+            onChange={(v) => setToggle("gridScenario", v)}
+            swatch={<Swatch color="#64748b" />}
+          />
           <div className="rounded-md border border-dashed border-border px-2 py-1.5 text-[10px] text-muted">
-            Flood hazard, documented data centers: layer data unavailable in this
-            build — shown as unavailable rather than fabricated.
+            Flood hazard &amp; documented data centers: layer data unavailable in this
+            build — shown as unavailable rather than fabricated. Grid-scenario greyout
+            is a simulated constraint (enter capacity in the bottom panel), not verified
+            saturation.
           </div>
           {layers && (
             <div className="pt-1 text-[10px] text-muted">

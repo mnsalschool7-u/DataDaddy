@@ -49,6 +49,7 @@ const DEFAULT_GRID: GridScenario = {
   availableCapacityMW: null,
   existingLoadMW: 0,
   priorDataCenterMW: 0,
+  portfolio: [],
   diversityFactor: 1,
 };
 

@@ -1,13 +1,14 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Database, Map, FlaskConical, GitCompareArrows, Scale, BookOpen } from "lucide-react";
+import { Database, Map, FlaskConical, GitCompareArrows, Scale, BookOpen, Users } from "lucide-react";
 import { cx } from "@/lib/format";
 
 const LINKS = [
   { href: "/", label: "Explore Map", icon: Map },
   { href: "/scenario-lab", label: "Scenario Lab", icon: FlaskConical },
   { href: "/compare", label: "Compare Sites", icon: GitCompareArrows },
+  { href: "/community", label: "Community Impact", icon: Users },
   { href: "/policy", label: "Massachusetts Policy", icon: Scale },
   { href: "/methodology", label: "Data & Methodology", icon: BookOpen },
 ];
