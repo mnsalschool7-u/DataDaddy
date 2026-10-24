@@ -15,6 +15,7 @@ import { NumberField, Slider, Select } from "@/components/ui/Controls";
 import { DATA_SOURCES } from "@/lib/data/sources";
 import { WaterSensitivityChart } from "@/components/charts/WaterSensitivityChart";
 import { saveReportSnapshot } from "@/lib/report";
+import { asset } from "@/lib/basePath";
 import { cx, fmt, fmtUSD, fmtGWh, fmtLiters, fmtPct, fmtMW } from "@/lib/format";
 
 type Tab = "calculations" | "grid" | "cost" | "charts" | "sources";
@@ -33,7 +34,7 @@ export function BottomPanel() {
       geo,
       result,
     });
-    window.open("/report", "_blank");
+    window.open(asset("/report"), "_blank");
   }
 
   const TABS: { id: Tab; label: string; icon: React.ElementType }[] = [

@@ -4,6 +4,7 @@ import type {
   Polygon,
   MultiPolygon,
 } from "geojson";
+import { asset } from "@/lib/basePath";
 
 /**
  * Client-side dataset loader. Fetches cached GeoJSON from /data and degrades
@@ -24,7 +25,7 @@ async function loadOne<T extends FeatureCollection>(
   id: LayerId,
 ): Promise<LoadedLayer<T>> {
   try {
-    const res = await fetch(`/data/${id}.geojson`, { cache: "force-cache" });
+    const res = await fetch(asset(`/data/${id}.geojson`), { cache: "force-cache" });
     if (!res.ok) {
       return { id, data: null, available: false, error: `HTTP ${res.status}` };
     }

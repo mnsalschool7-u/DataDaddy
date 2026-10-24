@@ -5,6 +5,11 @@ import { useSimulation } from "@/components/SimulationProvider";
 import { buildAnalystContext } from "@/lib/analyst/context";
 import { deterministicAnswer, SUGGESTED_QUESTIONS, type AnalystAnswer } from "@/lib/analyst/deterministic";
 
+// When statically exported (e.g. GitHub Pages) there is no API route, so the
+// analyst uses the deterministic generator directly. Full server builds (local
+// dev / Vercel) call /api/analyst, which also layers in an optional LLM.
+const STATIC_EXPORT = process.env.NEXT_PUBLIC_STATIC_EXPORT === "true";
+
 export function AnalystPanel() {
   const { site, project, grid, geo, result } = useSimulation();
   const [question, setQuestion] = useState("");
@@ -15,6 +20,11 @@ export function AnalystPanel() {
     if (!q.trim()) return;
     setLoading(true);
     const context = buildAnalystContext(site, project, grid, geo, result);
+    if (STATIC_EXPORT) {
+      setAnswer(deterministicAnswer(q, context));
+      setLoading(false);
+      return;
+    }
     try {
       const res = await fetch("/api/analyst", {
         method: "POST",
