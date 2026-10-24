@@ -34,7 +34,7 @@ export function greenSpaceWithinRadius(
   const analysisAreaSqMeters = turf.area(circle);
   const analysisAreaSqMiles = analysisAreaSqMeters / SQ_METERS_PER_SQ_MILE;
 
-  if (!openSpace || openSpace.features.length === 0) {
+  if (!openSpace) {
     return {
       radiusMiles,
       analysisAreaSqMiles,
@@ -97,7 +97,7 @@ export function schoolProximity(
   lat: number,
   schools: FeatureCollection<Point> | null,
 ): SchoolProximityResult {
-  if (!schools || schools.features.length === 0) {
+  if (!schools) {
     return {
       within1Mile: 0,
       within3Miles: 0,
@@ -141,7 +141,7 @@ export function ejOverlap(
   lat: number,
   ej: FeatureCollection<Polygon | MultiPolygon> | null,
 ): { overlaps: boolean; dataAvailable: boolean; names: string[] } {
-  if (!ej || ej.features.length === 0) {
+  if (!ej) {
     return { overlaps: false, dataAvailable: false, names: [] };
   }
   const pt = turf.point([lng, lat]);

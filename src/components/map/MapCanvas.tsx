@@ -148,7 +148,7 @@ export function MapCanvas({ toggles }: { toggles: LayerToggles }) {
         const level = (f.properties?.level as string) ?? "";
         new maplibregl.Popup()
           .setLngLat(e.lngLat)
-          .setHTML(`<strong>${name}</strong><br/>${level}`)
+          .setText(`${name} — ${level}`)
           .addTo(map);
       });
       map.on("mouseenter", "schools-circle", () => (map.getCanvas().style.cursor = "pointer"));
@@ -167,15 +167,15 @@ export function MapCanvas({ toggles }: { toggles: LayerToggles }) {
   // push loaded layers into sources
   useEffect(() => {
     const map = mapRef.current;
-    if (!map || !ready || !layers) return;
+    if (!map || !ready) return;
     const set = (id: string, data: GeoJSON.FeatureCollection | null) => {
       const src = map.getSource(id) as GeoJSONSource | undefined;
-      if (src && data) src.setData(data);
+      if (src) src.setData(data ?? { type: "FeatureCollection", features: [] });
     };
-    set("municipalities", layers.municipalities.data);
-    set("openspace", layers.openspace.data);
-    set("ej", layers.ej.data);
-    set("schools", layers.schools.data);
+    set("municipalities", layers?.municipalities.data ?? null);
+    set("openspace", layers?.openspace.data ?? null);
+    set("ej", layers?.ej.data ?? null);
+    set("schools", layers?.schools.data ?? null);
   }, [ready, layers]);
 
   // layer visibility

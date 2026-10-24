@@ -2,7 +2,6 @@
 import {
   createContext,
   useContext,
-  useEffect,
   useMemo,
   useState,
   type ReactNode,
@@ -16,7 +15,8 @@ import {
   type ScoringWeights,
   type Site,
 } from "@/lib/schemas";
-import { loadAllLayers, type AllLayers } from "@/lib/data/loader";
+import type { AllLayers } from "@/lib/data/loader";
+import { useSiteLayers } from "@/lib/data/useSiteLayers";
 import {
   greenSpaceWithinRadius,
   schoolProximity,
@@ -75,23 +75,7 @@ export function SimulationProvider({ children }: { children: ReactNode }) {
   const [grid, setGrid] = useState<GridScenario>(DEFAULT_GRID);
   const [cost, setCost] = useState<CostInputs>(DEFAULT_COST);
   const [weights, setWeights] = useState<ScoringWeights>(DEFAULT_WEIGHTS);
-  const [layers, setLayers] = useState<AllLayers | null>(null);
-  const [layersLoading, setLayersLoading] = useState(true);
-
-  useEffect(() => {
-    let active = true;
-    loadAllLayers()
-      .then((l) => {
-        if (active) {
-          setLayers(l);
-          setLayersLoading(false);
-        }
-      })
-      .catch(() => active && setLayersLoading(false));
-    return () => {
-      active = false;
-    };
-  }, []);
+  const { layers, layersLoading } = useSiteLayers(site);
 
   const geo: GeoContext = useMemo(() => {
     if (!site) {

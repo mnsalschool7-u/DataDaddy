@@ -1,4 +1,5 @@
 "use client";
+import { booleanPointInPolygon, point } from "@turf/turf";
 import { MapPin, Leaf, Zap, Droplets, Scale, Brain } from "lucide-react";
 import { useSimulation } from "@/components/SimulationProvider";
 import { Panel, PanelHeader, Metric } from "@/components/ui/Card";
@@ -7,7 +8,7 @@ import { AnalystPanel } from "./AnalystPanel";
 import { fmt, fmtGWh, fmtMWh, fmtLiters, fmtMW, fmtPct } from "@/lib/format";
 
 export function RightSidebar() {
-  const { site, geo, result, grid } = useSimulation();
+  const { site, geo, result, grid, layers, layersLoading } = useSimulation();
 
   if (!site) {
     return (
@@ -22,6 +23,10 @@ export function RightSidebar() {
     );
   }
 
+  const municipality = layers?.municipalities.data?.features.find(f =>
+    booleanPointInPolygon(point([site.lng, site.lat]), f));
+  const failures = layers ? [layers.openspace, layers.schools, layers.ej].filter(l => !l.available) : [];
+  const retrievedAt = layers?.openspace.retrievedAt ?? layers?.schools.retrievedAt;
   const gs = geo.greenSpace;
   const sc = geo.schools;
   const ej = geo.ej;
@@ -32,14 +37,14 @@ export function RightSidebar() {
       <Panel>
         <PanelHeader title="Site intelligence" icon={<MapPin size={13} />} />
         <div className="p-2.5">
-          <div className="text-sm font-semibold text-content">{site.name}</div>
+          <div className="text-sm font-semibold text-content">{municipality?.properties?.TOWN ?? site.name}</div>
           <div className="tabular mt-0.5 text-[11px] text-muted">
             {site.lat.toFixed(4)}, {site.lng.toFixed(4)} · radius {site.radiusMiles} mi
           </div>
           <div className="mt-2 grid grid-cols-2 gap-2">
             <Metric
               label="Screening score"
-              value={fmt(result.assessment.screeningScore, 0)}
+              value={layersLoading ? "…" : fmt(result.assessment.screeningScore, 0)}
               sub={`Evidence coverage ${fmtPct(result.assessment.evidenceCoverage)}`}
               accent={
                 result.assessment.screeningScore >= 66
@@ -63,6 +68,21 @@ export function RightSidebar() {
           </p>
         </div>
       </Panel>
+
+      <div className="rounded-md border border-border p-2.5 text-[11px] text-muted" role="status" aria-live="polite">
+        {layersLoading ? "Loading official MassGIS data for this location…" : (
+          <>
+            <p>Official MassGIS location data{retrievedAt ? ` · retrieved ${new Date(retrievedAt).toLocaleString()}` : ""}.</p>
+            {municipality?.properties?.POP2020 != null && <p>2020 Census population: {fmt(municipality.properties.POP2020, 0)}</p>}
+            <div className="mt-1 flex flex-wrap gap-2">
+              {[layers?.openspace, layers?.schools, layers?.ej].map(layer => layer?.sourceUrl && (
+                <a key={layer.id} href={layer.sourceUrl} target="_blank" rel="noreferrer" className="text-accent underline">{layer.id} source</a>
+              ))}
+            </div>
+            {failures.map(layer => <p key={layer.id} className="mt-1 text-caution">{layer.id}: {layer.error}. Value unavailable; no demo fallback.</p>)}
+          </>
+        )}
+      </div>
 
       {/* Environmental & geographic indicators */}
       <Panel>
@@ -103,7 +123,7 @@ export function RightSidebar() {
             value={
               ej?.dataAvailable ? (ej.overlaps ? "Within EJ" : "No overlap") : "Unknown"
             }
-            sub={ej?.overlaps ? ej.names[0] : ej?.dataAvailable ? "In mapped subset" : "Layer unavailable"}
+            sub={ej?.overlaps ? ej.names[0] : ej?.dataAvailable ? "Official designated block groups" : "Layer unavailable"}
             accent={ej?.overlaps ? "caution" : "muted"}
             provenance={ej?.dataAvailable ? "official" : "unknown"}
           />
@@ -115,7 +135,7 @@ export function RightSidebar() {
             provenance="unknown"
           />
           <p className="col-span-2 text-[10px] leading-snug text-muted">
-            Open-space datasets do not include every tree, lawn, or undeveloped
+            Values describe the selected location. Open-space datasets do not include every tree, lawn, or undeveloped
             parcel. Absence of mapped features is not proof of absence on the ground.
           </p>
         </div>
@@ -177,6 +197,11 @@ export function RightSidebar() {
           </p>
         )}
       </Panel>
+
+      <p className="px-2 text-[10px] leading-snug text-muted">
+        Electricity and water are facility scenario estimates, not measured local consumption.
+        They change with project settings; geographic indicators change with the selected site.
+      </p>
 
       {/* Grid scenario */}
       <Panel>

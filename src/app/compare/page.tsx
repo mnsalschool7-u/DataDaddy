@@ -1,9 +1,10 @@
 "use client";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { GitCompareArrows } from "lucide-react";
 import { MUNICIPALITIES } from "@/lib/data/municipalities";
 import { DEFAULT_PROJECT, DEFAULT_WEIGHTS, type Site } from "@/lib/schemas";
-import { loadAllLayers, type AllLayers } from "@/lib/data/loader";
+import { type AllLayers } from "@/lib/data/loader";
+import { useSiteLayers } from "@/lib/data/useSiteLayers";
 import { greenSpaceWithinRadius, schoolProximity, ejOverlap } from "@/lib/geo/analysis";
 import { runSimulation, type GeoContext } from "@/lib/model/orchestrator";
 import { Panel, PanelHeader, Metric } from "@/components/ui/Card";
@@ -28,29 +29,26 @@ function geoFor(site: Site, layers: AllLayers | null): GeoContext {
 }
 
 export default function ComparePage() {
-  const [layers, setLayers] = useState<AllLayers | null>(null);
   const [weights, setWeights] = useState(DEFAULT_WEIGHTS);
   const [aName, setAName] = useState("Worcester");
   const [bName, setBName] = useState("Lowell");
 
-  useEffect(() => {
-    loadAllLayers().then(setLayers);
-  }, []);
-
-  const siteA = siteFromMuni(aName);
-  const siteB = siteFromMuni(bName);
+  const siteA = useMemo(() => siteFromMuni(aName), [aName]);
+  const siteB = useMemo(() => siteFromMuni(bName), [bName]);
+  const { layers: layersA, layersLoading: loadingA } = useSiteLayers(siteA);
+  const { layers: layersB, layersLoading: loadingB } = useSiteLayers(siteB);
 
   const resA = useMemo(
-    () => runSimulation({ site: siteA, project: DEFAULT_PROJECT, grid: { mode: "public-screening", availableCapacityMW: null, existingLoadMW: 0, priorDataCenterMW: 0, portfolio: [], diversityFactor: 1 }, cost: null, weights, geo: geoFor(siteA, layers) }),
-    [aName, layers, weights],
+    () => runSimulation({ site: siteA, project: DEFAULT_PROJECT, grid: { mode: "public-screening", availableCapacityMW: null, existingLoadMW: 0, priorDataCenterMW: 0, portfolio: [], diversityFactor: 1 }, cost: null, weights, geo: geoFor(siteA, layersA) }),
+    [siteA, layersA, weights],
   );
   const resB = useMemo(
-    () => runSimulation({ site: siteB, project: DEFAULT_PROJECT, grid: { mode: "public-screening", availableCapacityMW: null, existingLoadMW: 0, priorDataCenterMW: 0, portfolio: [], diversityFactor: 1 }, cost: null, weights, geo: geoFor(siteB, layers) }),
-    [bName, layers, weights],
+    () => runSimulation({ site: siteB, project: DEFAULT_PROJECT, grid: { mode: "public-screening", availableCapacityMW: null, existingLoadMW: 0, priorDataCenterMW: 0, portfolio: [], diversityFactor: 1 }, cost: null, weights, geo: geoFor(siteB, layersB) }),
+    [siteB, layersB, weights],
   );
 
-  const geoA = geoFor(siteA, layers);
-  const geoB = geoFor(siteB, layers);
+  const geoA = geoFor(siteA, layersA);
+  const geoB = geoFor(siteB, layersB);
 
   return (
     <div className="min-h-0 flex-1 overflow-y-auto p-4">
@@ -62,6 +60,7 @@ export default function ComparePage() {
         </span>
       </div>
 
+      {(loadingA || loadingB) && <p role="status" className="mb-3 text-xs text-muted">Loading official site data…</p>}
       <div className="mb-3 grid grid-cols-2 gap-3">
         <SitePicker label="Site A" value={aName} onChange={setAName} />
         <SitePicker label="Site B" value={bName} onChange={setBName} />

@@ -16,7 +16,7 @@ export interface DataSource {
   geographicCoverage: string;
   processingNotes: string;
   reliabilityLimitations: string;
-  /** Whether a usable local layer was obtained for the demo. */
+  /** Whether the app integrates a queryable official service; request failures are shown in the dashboard. */
   status: "loaded" | "reference-only" | "unavailable";
 }
 
@@ -28,13 +28,13 @@ export const DATA_SOURCES: DataSource[] = [
     name: "MassGIS Data: Municipalities",
     publisher: "MassGIS (Bureau of Geographic Information), Commonwealth of Massachusetts",
     url: "https://www.mass.gov/info-details/massgis-data-municipalities",
-    publishedDate: "2024",
+
     retrievedDate: RETRIEVED,
     geographicCoverage: "All 351 Massachusetts cities and towns",
     processingNotes:
-      "Official layer referenced. A curated, generalized subset of representative municipality centroids/boundaries ships locally for a reliable offline demo; run scripts/fetch-data.ts to process the full official layer.",
+      "Official MassGIS hosted municipality polygons queried directly as WGS84 GeoJSON. The selected point is resolved against town boundaries; population is the official POP2020 attribute.",
     reliabilityLimitations:
-      "Bundled demo subset is generalized and does not include all 351 municipalities at full polygon resolution.",
+      "Coastline and polygon coordinates are generalized for display; population is the 2020 Census, not a current-year estimate.",
     status: "loaded",
   },
   {
@@ -42,13 +42,13 @@ export const DATA_SOURCES: DataSource[] = [
     name: "MassGIS Data: Protected and Recreational Open Space",
     publisher: "MassGIS, Commonwealth of Massachusetts",
     url: "https://www.mass.gov/info-details/massgis-data-protected-and-recreational-openspace",
-    publishedDate: "2024",
+
     retrievedDate: RETRIEVED,
     geographicCoverage: "Statewide protected and recreational open space parcels",
     processingNotes:
-      "Official layer referenced. Curated representative open-space polygons bundled for demo radius analysis; full layer processed via fetch-data.ts.",
+      "Official EEA/MassGIS polygon service queried for the selected analysis radius with complete pagination. Turf intersects returned polygons with the analysis circle.",
     reliabilityLimitations:
-      "Open-space datasets do NOT include every tree, lawn, or undeveloped parcel. Bundled subset covers selected areas only.",
+      "Mapped protected and recreational parcels do not include every tree, lawn, or undeveloped parcel. Live service outages produce unavailable values, never zero-filled demo data.",
     status: "loaded",
   },
   {
@@ -56,13 +56,13 @@ export const DATA_SOURCES: DataSource[] = [
     name: "MassGIS Data: Massachusetts Schools (Pre-K through High School)",
     publisher: "MassGIS, Commonwealth of Massachusetts",
     url: "https://www.mass.gov/info-details/massgis-data-massachusetts-schools-pre-k-through-high-school",
-    publishedDate: "2024",
+
     retrievedDate: RETRIEVED,
     geographicCoverage: "Statewide public and many non-public schools",
     processingNotes:
-      "Official layer referenced. Curated representative school points bundled for proximity analysis in demo areas.",
+      "Official statewide MassGIS school service queried with complete pagination; distances and 1/3-mile counts recomputed from the selected coordinates.",
     reliabilityLimitations:
-      "Bundled subset is not the complete statewide school roster; proximity counts reflect mapped points only.",
+      "Counts reflect the published school roster and its update schedule; they are not a real-time enrollment inventory.",
     status: "loaded",
   },
   {
@@ -74,9 +74,9 @@ export const DATA_SOURCES: DataSource[] = [
     retrievedDate: RETRIEVED,
     geographicCoverage: "Designated EJ block groups statewide",
     processingNotes:
-      "Official layer referenced. Curated representative EJ block-group polygons bundled for overlap checks in demo areas.",
+      "Official MassGIS EJ2020 service queried around each site, restricted to EJ = Yes. The selected point is checked against the returned designated block groups.",
     reliabilityLimitations:
-      "Bundled subset covers selected block groups; absence of overlap in the subset does not prove absence of EJ designation.",
+      "Designation uses the published 2020 EJ dataset, not a current demographic estimate. An empty successful query means no designated overlap; failed requests remain unknown.",
     status: "loaded",
   },
   {
@@ -87,7 +87,7 @@ export const DATA_SOURCES: DataSource[] = [
     retrievedDate: RETRIEVED,
     geographicCoverage: "Statewide catalog of GIS layers",
     processingNotes:
-      "Referenced for flood hazard and land-use layers. Flood layer not bundled in the demo subset.",
+      "Referenced for flood hazard and land-use layers. Flood layer is not integrated.",
     reliabilityLimitations:
       "Flood hazard shown as 'data unavailable' where not bundled; do not infer zero flood risk.",
     status: "reference-only",

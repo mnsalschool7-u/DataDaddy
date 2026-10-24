@@ -32,9 +32,6 @@ jobs:
       - name: Install dependencies
         run: npm install
 
-      - name: Generate demo GeoJSON
-        run: node scripts/generate-demo-geojson.mjs
-
       - name: Remove server-only API route for static export
         run: rm -rf src/app/api
 

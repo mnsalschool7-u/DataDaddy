@@ -22,7 +22,7 @@ describe("greenSpaceWithinRadius", () => {
         fc.double({ min: 0.2, max: 2, noNaN: true }),
         fc.integer({ min: 1, max: 5 }),
         (blobR, n) => {
-          const feats = Array.from({ length: n }, (_, i) =>
+          const feats = Array.from({ length: n }, () =>
             turf.circle([LNG, LAT], blobR, { units: "miles", steps: 24 }),
           );
           const layer: FeatureCollection<Polygon | MultiPolygon> = {
@@ -86,5 +86,14 @@ describe("ejOverlap", () => {
     const r = ejOverlap(LNG, LAT, layer);
     expect(r.overlaps).toBe(true);
     expect(r.names).toContain("EJ test");
+  });
+});
+
+ describe("complete empty official queries", () => {
+  it("distinguishes no mapped features from an unavailable source", () => {
+    const empty = { type: "FeatureCollection" as const, features: [] };
+    expect(greenSpaceWithinRadius(LNG, LAT, 3, empty).dataAvailable).toBe(true);
+    expect(schoolProximity(LNG, LAT, empty).dataAvailable).toBe(true);
+    expect(ejOverlap(LNG, LAT, empty)).toEqual({ dataAvailable: true, overlaps: false, names: [] });
   });
 });

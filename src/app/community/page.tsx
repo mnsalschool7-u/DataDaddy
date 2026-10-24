@@ -1,6 +1,6 @@
 "use client";
 import { useMemo, useState } from "react";
-import { Users, Home, Scale3d, ExternalLink } from "lucide-react";
+import { Users, Home, Scale3d } from "lucide-react";
 import {
   BarChart,
   Bar,
@@ -91,10 +91,10 @@ export default function CommunityPage() {
             {housing ? (
               <>
                 <div className="mt-3 grid grid-cols-2 gap-2">
-                  <Metric label="Population" value={fmt(MUNICIPALITIES.find((m) => m.name === muni)?.population ?? 0)} provenance="official" accent="muted" />
-                  <Metric label="Housing units" value={fmt(housing.housingUnits)} provenance="official" accent="muted" />
-                  <Metric label="Median gross rent" value={`${fmtUSD(housing.medianRentUSD)}/mo`} sub="current context" provenance="official" accent="muted" />
-                  <Metric label="Median hh income" value={`${fmtUSD(housing.medianHouseholdIncomeUSD)}/yr`} sub="current context" provenance="official" accent="muted" />
+                  <Metric label="Population" value={fmt(MUNICIPALITIES.find((m) => m.name === muni)?.population ?? 0)} provenance="estimated" accent="muted" />
+                  <Metric label="Housing units" value={fmt(housing.housingUnits)} provenance="estimated" accent="muted" />
+                  <Metric label="Median gross rent" value={`${fmtUSD(housing.medianRentUSD)}/mo`} sub="curated approximation" provenance="estimated" accent="muted" />
+                  <Metric label="Median hh income" value={`${fmtUSD(housing.medianHouseholdIncomeUSD)}/yr`} sub="curated approximation" provenance="estimated" accent="muted" />
                 </div>
                 {rentPctContext != null && (
                   <p className="mt-2 rounded border border-border bg-panel-2/40 px-2 py-1.5 text-[11px] text-content">
@@ -108,6 +108,7 @@ export default function CommunityPage() {
               <p className="mt-3 text-[11px] text-muted">Housing context <ProvenanceChip provenance="unknown" /> unavailable for this municipality in the demo subset.</p>
             )}
             <p className="mt-2 text-[10px] leading-snug text-muted">
+              Housing figures here are curated approximations, not a live Census feed.
               DataDaddy measures development exposure and land-use competition. It does
               not predict changes in rents or home values without an independently supported causal model.
             </p>

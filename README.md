@@ -14,8 +14,7 @@ space, nearby communities, and local economic conditions.
 
 *Live site-intelligence dashboard: a 40 MW data center at Worcester resolves to 297.84 GWh/yr
 facility demand, a modeled water estimate, mapped open-space / school / EJ context, and EO 658
-regulatory findings — every value labeled by provenance. Try it instantly with no install by
-opening [`demo/standalone.html`](./demo/standalone.html) (full interactive MapLibre map) in any browser.*
+regulatory findings — every value labeled by provenance. Open the [public demo](https://mnsalschool7-u.github.io/DataDaddy/). The legacy standalone HTML uses representative data; the Next.js app queries official services.*
 
 ---
 
@@ -58,8 +57,8 @@ src/
     data/         provenance types, source registry, loaders, municipalities
     analyst/      analyst context + deterministic generator
     schemas.ts    Zod schemas / defaults
-public/data/      cached, attributed GeoJSON layers
-scripts/          fetch-data.ts (official pipeline docs) + generate-demo-geojson.mjs
+public/data/      legacy representative fixtures (not used by live dashboard)
+scripts/          fetch-data.ts (real-feed integration check) + legacy demo generator
 .kiro/            specs, steering, hooks (Kiro development artifacts)
 ```
 
@@ -67,10 +66,23 @@ scripts/          fetch-data.ts (official pipeline docs) + generate-demo-geojson
 Official MassGIS layers (municipalities, protected & recreational open space, schools, 2020
 environmental justice populations), ISO New England RSP for regional context, and the MA
 policy sources. See the **Data & Methodology** page and `src/lib/data/sources.ts` for full
-attribution, retrieval dates, and limitations. A curated, clearly-labeled subset ships in
-`public/data/` for a reliable offline demo; `npm run fetch-data` documents the official
-endpoints and processing steps (reproject to WGS84, simplify, validate). **No official data
-is fabricated** — unavailable layers are marked unavailable.
+attribution and limitations. The browser queries official MassGIS/EEA ArcGIS services directly:
+- Statewide municipality boundaries (351 towns) and the published 2020 Census population.
+- Statewide school roster, paginated completely for distance and proximity calculations.
+- Protected/recreational open-space polygons intersecting the selected radius.
+- Designated EJ2020 block groups around the site (only `EJ = Yes`).
+
+Each location/radius change cancels obsolete requests, clears previous geographic results,
+and recalculates the screening assessment after fresh data arrives. Successful responses
+are cached in memory for ten minutes. Source links and retrieval times appear in the sidebar.
+A failed source remains unknown; there is no representative-data fallback. This also works
+on static GitHub Pages hosting because the official services allow browser CORS requests.
+`npm run fetch-data` checks the real services at Worcester and Lowell and verifies that their
+geographic metrics differ. The legacy GeoJSON generator is not used by the dashboard.
+
+Facility electricity/water demand remains a scenario calculation, not measured local usage.
+Flood hazard and verified local utility capacity remain unavailable. The Community page's
+housing context is explicitly labeled as curated approximations, not official live observations.
 
 ## 6. How the simulator works
 Energy: `annualFacilityMWh = peakMW × 8760 × utilization` (40 MW @ 85% → **297.84 GWh/yr**);
@@ -82,10 +94,9 @@ than inventing favorable values. Full formulas live on the **Data & Methodology*
 ## 7. Run the project
 ```bash
 npm install
-node scripts/generate-demo-geojson.mjs   # writes public/data/*.geojson (also runs in CI)
 npm run dev                               # http://localhost:3000
 ```
-All core features work with **no API keys**. Optional LLM analyst: copy `.env.example` to
+Use Node 20 or 22. Official map data requires internet access but **no API keys**. Optional LLM analyst: copy `.env.example` to
 `.env.local` and set `OPENAI_API_KEY` (degrades gracefully to the deterministic analyst).
 
 ## 8. Run tests & checks
@@ -102,11 +113,11 @@ Spec-driven development (`.kiro/specs/datadaddy/`), five steering documents
 and property-based testing. Full detail in [`KIRO_USAGE.md`](./KIRO_USAGE.md).
 
 ## 10. Limitations & future development
-- Demo GeoJSON is a **curated subset**, not the full statewide layers; run the ingestion
-  pipeline to process complete MassGIS data.
+- Live geographic results depend on the official services and their publication schedules.
+  Empty successful queries and failed requests are represented separately.
 - Flood hazard and documented-data-center layers are shown as *unavailable* in this build.
 - Grid capacity is **scenario-based**, never asserted as verified distribution headroom.
-- Future: full layer ingestion, utility-territory capacity data, richer grid-stress viz,
+- Future: utility-territory capacity data, verified housing feeds, richer grid-stress viz,
   and persisted multi-project cumulative pressure maps.
 
 > **Integrity note:** DataDaddy presents a *preliminary screening model*. It is not a

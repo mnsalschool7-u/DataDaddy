@@ -1,108 +1,31 @@
-/**
- * Official MassGIS data ingestion pipeline (documentation + best-effort fetch).
- *
- * This script documents the exact official endpoints and the processing steps
- * DataDaddy applies to produce the app's GeoJSON layers. In environments with
- * internet access it will attempt to download and process the real layers; where
- * a download is unavailable it reports the limitation and leaves the curated demo
- * subset in place (it NEVER fabricates official data).
- *
- * Processing steps for each dataset:
- *   1. Identify the official download / service endpoint (below).
- *   2. Retrieve the source data if available.
- *   3. Convert to GeoJSON.
- *   4. Normalize CRS to WGS84 (EPSG:4326). MassGIS native is often EPSG:26986.
- *   5. Simplify large polygons for web display.
- *   6. Validate geometry and attributes.
- *   7. Record source URL + retrieval date (see src/lib/data/sources.ts).
- *   8. Cache processed GeoJSON under public/data/.
- *
- * Run: npm run fetch-data
- */
-
-interface DatasetEndpoint {
-  id: string;
-  name: string;
-  landingPage: string;
-  /** Typical MassGIS download options (shapefile / FileGDB) and ArcGIS services. */
-  downloadHint: string;
-  nativeCRS: string;
-  outFile: string;
-}
-
-const ENDPOINTS: DatasetEndpoint[] = [
-  {
-    id: "massgis-municipalities",
-    name: "Municipalities",
-    landingPage: "https://www.mass.gov/info-details/massgis-data-municipalities",
-    downloadHint:
-      "Download TOWNSSURVEY_POLY (shapefile/FileGDB) from the landing page, or use the MassGIS ArcGIS REST service.",
-    nativeCRS: "EPSG:26986 (NAD83 / Massachusetts Mainland)",
-    outFile: "public/data/municipalities.geojson",
-  },
-  {
-    id: "massgis-openspace",
-    name: "Protected and Recreational Open Space",
-    landingPage:
-      "https://www.mass.gov/info-details/massgis-data-protected-and-recreational-openspace",
-    downloadHint: "Download OPENSPACE_POLY (shapefile/FileGDB) from the landing page.",
-    nativeCRS: "EPSG:26986",
-    outFile: "public/data/openspace.geojson",
-  },
-  {
-    id: "massgis-schools",
-    name: "Massachusetts Schools (Pre-K through High School)",
-    landingPage:
-      "https://www.mass.gov/info-details/massgis-data-massachusetts-schools-pre-k-through-high-school",
-    downloadHint: "Download the schools point layer (shapefile/FileGDB).",
-    nativeCRS: "EPSG:26986",
-    outFile: "public/data/schools.geojson",
-  },
-  {
-    id: "massgis-ej",
-    name: "2020 Environmental Justice Populations",
-    landingPage:
-      "https://www.mass.gov/info-details/massgis-data-2020-environmental-justice-populations",
-    downloadHint: "Download the EJ 2020 block-group polygon layer.",
-    nativeCRS: "EPSG:26986",
-    outFile: "public/data/ej.geojson",
-  },
-];
-
-async function reachable(url: string): Promise<boolean> {
-  try {
-    const res = await fetch(url, { method: "HEAD" });
-    return res.ok;
-  } catch {
-    return false;
-  }
-}
+/** Verify real, location-specific official GIS feeds (no generated demo fallback). */
+import { loadAllLayers } from "../src/lib/data/loader";
+import { greenSpaceWithinRadius, schoolProximity, ejOverlap } from "../src/lib/geo/analysis";
 
 async function main() {
-  console.log("DataDaddy — MassGIS ingestion pipeline\n");
-  console.log(
-    "This documents official endpoints and attempts retrieval. To process the\n" +
-      "full layers you will typically need a shapefile->GeoJSON step (e.g. GDAL\n" +
-      "`ogr2ogr -t_srs EPSG:4326 out.geojson in.shp`) plus polygon simplification.\n",
-  );
-
-  for (const ep of ENDPOINTS) {
-    const ok = await reachable(ep.landingPage);
-    console.log(`• ${ep.name} [${ep.id}]`);
-    console.log(`    landing page : ${ep.landingPage} (${ok ? "reachable" : "not reachable in this environment"})`);
-    console.log(`    download     : ${ep.downloadHint}`);
-    console.log(`    native CRS   : ${ep.nativeCRS} -> reproject to EPSG:4326`);
-    console.log(`    output       : ${ep.outFile}`);
-    console.log(
-      `    status       : ${ok ? "endpoint reachable; manual download + ogr2ogr recommended" : "using curated demo subset (see scripts/generate-demo-geojson.mjs)"}\n`,
-    );
+  const results = [];
+  for (const site of [
+    { id: "worcester", name: "Worcester", lat: 42.2626, lng: -71.8023, radiusMiles: 3 as const },
+    { id: "lowell", name: "Lowell", lat: 42.6334, lng: -71.3162, radiusMiles: 3 as const },
+  ]) {
+    const layers = await loadAllLayers(site);
+    for (const layer of Object.values(layers)) {
+      if (!layer.available) throw new Error(`${site.name} ${layer.id}: ${layer.error}`);
+      console.log(`${site.name}: ${layer.id}: ${layer.data?.features.length} official features (${layer.sourceUrl})`);
+    }
+    const green = greenSpaceWithinRadius(site.lng, site.lat, 3, layers.openspace.data);
+    const schools = schoolProximity(site.lng, site.lat, layers.schools.data);
+    const ej = ejOverlap(site.lng, site.lat, layers.ej.data);
+    const metrics = { municipality: site.name, openSpaceAcres: green.openSpaceAcres,
+      openSpacePercent: green.coveragePercent, schoolsWithin1Mile: schools.within1Mile,
+      schoolsWithin3Miles: schools.within3Miles, nearestSchool: schools.nearestName,
+      nearestMiles: schools.nearestDistanceMiles, ej: ej.overlaps };
+    console.log(JSON.stringify(metrics, null, 2));
+    results.push(metrics);
   }
-
-  console.log(
-    "No official data is fabricated. Where full layers are not retrieved, the\n" +
-      "curated, clearly-labeled demo subset remains in place and the source\n" +
-      "registry records the limitation.",
-  );
+  if (results[0].openSpaceAcres === results[1].openSpaceAcres || results[0].nearestSchool === results[1].nearestSchool) {
+    throw new Error("Different sites unexpectedly returned identical geographic metrics");
+  }
+  console.log("Verified: location-specific geographic results differ between Worcester and Lowell.");
 }
-
-main();
+main().catch(error => { console.error(error); process.exitCode = 1; });

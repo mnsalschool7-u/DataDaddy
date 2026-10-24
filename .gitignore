@@ -38,3 +38,7 @@ next-env.d.ts
 # local browser-tool scratch
 .agentbrowser/
 .kiro/artifacts/
+
+# Local runtime and npm download cache
+/.runtime/
+/.npm-cache/
