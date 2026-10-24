@@ -20,6 +20,10 @@ describe("map screening classifications", () => {
    expect(assessZone("grid", result(10, null), geo, finance, DEFAULT_FINANCIAL).category).toBe("unknown");
    expect(assessZone("grid", result(10, 0), geo, finance, DEFAULT_FINANCIAL).category).toBe("red");
  });
+ it("does not hide an explicit capacity shortfall when geographic sources are unavailable", () => {
+   const finance = computeFinancial(DEFAULT_FINANCIAL, cost);
+   expect(assessZone("overall", result(100, 50), geo, finance, DEFAULT_FINANCIAL, true).category).toBe("red");
+ });
  it("financial layers disclose municipality-level assumptions", () => {
    const finance = computeFinancial(DEFAULT_FINANCIAL, cost);
    expect(assessZone("energy", result(10, null), geo, finance, DEFAULT_FINANCIAL).unit).toBe("municipality");

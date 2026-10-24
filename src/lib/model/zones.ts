@@ -11,6 +11,11 @@ export function assessZone(mode: OverlayMode, result: SimulationResult, geo: Geo
   const financial = ["energy", "housing", "burden"].includes(mode);
   const unit = financial ? "municipality" : "site radius";
   const unknown = (reason: string): ZoneAssessment => ({ category: "unknown", label: "Insufficient data", reasons: [reason], legend: "Hatching = insufficient evidence; grey exclusion is reserved for documented restrictions", unit });
+  if (mode === "overall" && result.grid.exceeded) return {
+    category: "red", label: "Significant modeled constraints", unit: "site radius",
+    reasons: [`User-entered capacity is exceeded by ${(result.grid.shortfallMW ?? 0).toFixed(1)} MW. This known scenario constraint remains visible even when geographic data is unavailable; it is not verified utility headroom.`],
+    legend: "Red: demand exceeds explicitly entered scenario capacity. Other environmental evidence may still be unknown.",
+  };
   if (loading && !financial && mode !== "grid") return unknown("Official geographic evidence is still loading");
   let category: ZoneAssessment["category"] = "green";
   const reasons: string[] = [];
