@@ -33,7 +33,7 @@ export function MapCanvas({ toggles }: { toggles: LayerToggles }) {
   const latest = useRef(sim);
   latest.current = sim;
   const [placing, setPlacing] = useState(false);
-  const [details, setDetails] = useState(true);
+  const [details, setDetails] = useState(false);
   const zone = assessZone(overlay, result, sim.geo, financialResult, finance, layersLoading);
   const color = ZONE_COLORS[zone.category];
 
@@ -161,7 +161,7 @@ export function MapCanvas({ toggles }: { toggles: LayerToggles }) {
       // click to select a site
       map.on("click", (e) => {
         setPlacing(false);
-        setDetails(true);
+        setDetails(!!latest.current.site && map.queryRenderedFeatures(e.point, { layers: ["impact-zone"] }).length > 0);
         setSite({
           id: `site-${Date.now()}`,
           name: `Selected location (${e.lngLat.lat.toFixed(4)}, ${e.lngLat.lng.toFixed(4)})`,
@@ -313,7 +313,7 @@ export function MapCanvas({ toggles }: { toggles: LayerToggles }) {
     if (!rect || !mapRef.current) return;
     const coords = mapRef.current.unproject([event.clientX - rect.left, event.clientY - rect.top]);
     setSite({ id: `facility-${Date.now()}`, name: "Proposed facility", lng: coords.lng, lat: coords.lat, radiusMiles: site?.radiusMiles ?? 3 });
-    setPlacing(false); setDetails(true);
+    setPlacing(false); setDetails(false);
   }
 
   return (
@@ -337,7 +337,8 @@ export function MapCanvas({ toggles }: { toggles: LayerToggles }) {
             <p>{zone.legend}</p>
           </div>}
         </>}
-        <p className="text-[9px] text-muted">Green favorable · yellow moderate · red significant modeled risk.<br/>Grey reserved for documented exclusions · hatching insufficient data.<br/>Purple residential · orange commercial/mixed land use (2016, near footprint).<br/>No development approval; financial layers cover only the selected town using shared scenario assumptions.</p>
+        {!site && <button onClick={() => setDetails(!details)} className="text-[10px] text-accent">Legend &amp; model thresholds ▾</button>}
+        {details && <p className="text-[9px] text-muted">Green favorable · yellow moderate · red significant modeled risk.<br/>Grey reserved for documented exclusions · hatching insufficient data.<br/>Purple residential · orange commercial/mixed land use (2016, near footprint).<br/>No development approval; financial layers cover only the selected town using shared scenario assumptions.</p>}
       </div>
       {placing && <div role="status" className="pointer-events-none absolute bottom-8 left-3 rounded bg-accent p-2 text-xs text-bg">Click map to place the facility</div>}
     </div>
