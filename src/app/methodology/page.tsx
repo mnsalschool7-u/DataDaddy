@@ -21,7 +21,7 @@ export default function MethodologyPage() {
           <div className="space-y-2 p-3 font-mono text-[11px] text-content/90">
             <p>annualFacilityMWh = peakFacilityMW × 8760 × utilization</p>
             <p>annualFacilityGWh = annualFacilityMWh / 1000</p>
-            <p>annualItMWh = annualFacilityMWh / PUE  <span className="text-muted">// IT ≠ facility</span></p>
+            <p>annualItMWh = annualFacilityMWh / PUE  <span className="text-muted">{"// IT \u2260 facility"}</span></p>
             <p>annualOverheadMWh = annualFacilityMWh − annualItMWh</p>
             <p>cleanUncoveredMWh = max(0, facility − facility × coverage)</p>
             <p>annualWaterLiters = (annualItMWh × 1000) × WUE</p>
@@ -34,7 +34,7 @@ export default function MethodologyPage() {
           <PanelHeader title="Grid & cost formulas" />
           <div className="space-y-2 p-3 font-mono text-[11px] text-content/90">
             <p>cumulative = (existing + prior + proposed) × diversity</p>
-            <p>remaining = available − cumulative  <span className="text-muted">// null if unknown</span></p>
+            <p>remaining = available − cumulative  <span className="text-muted">{"// null if unknown"}</span></p>
             <p>shortfall = max(0, cumulative − available)</p>
             <p>totalUpgrade = costPerMW × incrementalMW</p>
             <p>nonDeveloper = total × (1 − developerFunded)</p>
