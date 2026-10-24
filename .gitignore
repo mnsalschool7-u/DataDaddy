@@ -31,3 +31,6 @@ next-env.d.ts
 /coverage
 
 # NOTE: .kiro is intentionally NOT ignored — it contains development artifacts.
+
+# sandbox session settings (not part of the project)
+.kiro/settings/
