@@ -1,0 +1,72 @@
+<!doctype html><meta charset="utf-8"><title>DataDaddy</title>
+<style>
+body{margin:0;background:#0a0f1a;color:#e5ecf5;font:13px ui-sans-serif,system-ui,sans-serif}
+.h{height:46px;display:flex;align-items:center;gap:8px;padding:0 16px;border-bottom:1px solid #273349;background:#141b2b}
+.lg{width:26px;height:26px;border-radius:6px;background:rgba(56,189,248,.2);color:#38bdf8;display:flex;align-items:center;justify-content:center;font-weight:800}
+.wrap{display:flex;gap:14px;padding:14px}.col{flex:1}
+.p{border:1px solid #273349;background:#141b2b;border-radius:10px;margin-bottom:12px}
+.ph{padding:8px 12px;border-bottom:1px solid #273349;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:#8ba0bf;font-weight:600}
+.pb{padding:10px}.m{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.mc{border:1px solid #273349;background:#1c2639;border-radius:8px;padding:8px 10px}
+.l{font-size:11px;text-transform:uppercase;color:#8ba0bf;display:flex;justify-content:space-between;gap:4px}
+.n{font-size:18px;font-weight:700;margin-top:3px}.s{font-size:11px;color:#8ba0bf;margin-top:2px}
+.c{font-size:9px;text-transform:uppercase;border:1px solid;border-radius:4px;padding:1px 5px;white-space:nowrap}
+.co{color:#34d399;border-color:#34d39966}.cc{color:#38bdf8;border-color:#38bdf866}.ca{color:#fbbf24;border-color:#fbbf2466}.cu{color:#8ba0bf;border-color:#64748b66}
+.af{color:#34d399}.aw{color:#fbbf24}.ar{color:#f87171}.ac{color:#38bdf8}.am{color:#8ba0bf}
+.b{border:1px solid;border-radius:8px;padding:8px 10px;font-size:12px}.bu{border-color:#64748b66;background:#64748b1a;color:#8ba0bf}
+.f{border:1px solid #273349;border-radius:8px;padding:8px;margin-top:8px}.ft{font-size:12px;font-weight:600}
+.note{font-size:10px;color:#8ba0bf;line-height:1.4;margin-top:8px}
+.ctl label{display:block;margin-bottom:9px}.row{display:flex;justify-content:space-between;font-size:11px;color:#8ba0bf;text-transform:uppercase}.v{color:#e5ecf5;font-weight:600}
+input,select{width:100%;background:#1c2639;border:1px solid #273349;color:#e5ecf5;border-radius:6px;padding:5px 8px;margin-top:4px}
+</style>
+<div class="h"><div class="lg">D</div><b>Data<span style="color:#38bdf8">Daddy</span></b><span style="font-size:9px;letter-spacing:.15em;text-transform:uppercase;color:#8ba0bf">· Putting data centers in their place</span></div>
+<div class="wrap"><div class="col" style="flex:0.6">
+<div class="p"><div class="ph">Project assumptions · Worcester</div><div class="pb ctl">
+<label><div class="row"><span>Peak facility demand</span><span class="v">40 MW</span></div><input type="range" min="5" max="200" value="40"></label>
+<label><div class="row"><span>Average utilization</span><span class="v">85%</span></div><input type="range" min="30" max="100" value="85"></label>
+<label><div class="row"><span>PUE (illustrative 1.4)</span></div><input value="1.4"></label>
+<label><div class="row"><span>Cooling technology</span></div><select><option>Hybrid</option></select></label>
+<label><div class="row"><span>Clean-energy coverage</span><span class="v">30%</span></div><input type="range" min="0" max="100" value="30"></label>
+<label><div class="row"><span>Available grid capacity</span></div><input placeholder="unknown"></label>
+</div></div></div>
+<div class="col" id="intel"></div></div>
+<script>
+var P={mw:40,util:.85,pue:1.4,wue:.5,clean:.3};
+var geo={gsCov:6.2,gsAc:1120,area:28.3,w1:2,w3:4,near:.34,ej:true};
+function f(n,d){d=d||0;return n.toLocaleString("en-US",{minimumFractionDigits:d,maximumFractionDigits:d});}
+function G(m){return f(m/1000,2)+" GWh";}
+function L(l){return l>=1e6?f(l/1e6,2)+" million L":f(l,0)+" L";}
+function cl(x,a,b){return Math.min(Math.max(x,a),b);}
+function chip(p){var t={o:"Official source",c:"Calculated",a:"Scenario assumption",e:"Estimated",u:"Unknown"}[p];var k={o:"co",c:"cc",a:"ca",e:"ca",u:"cu"}[p];return '<span class="c '+k+'">'+t+'</span>';}
+var fac=P.mw*8760*P.util, it=fac/P.pue, unc=fac*(1-P.clean), water=it*1000*P.wue;
+var le=cl(100-geo.gsCov*1.5,0,100), com=cl(100-(geo.w1*20+geo.w3*5)-(geo.ej?30:0),0,100);
+var pu=cl((2-P.pue)/0.9,0,1), res=cl((pu*.5+P.clean*.5)*100,0,100);
+var comps=[[.30,le],[.25,null],[.20,com],[.15,res],[.10,60]];
+var incl=comps.filter(function(c){return c[1]!==null;});
+var im=incl.reduce(function(a,c){return a+c[0];},0), tot=comps.reduce(function(a,c){return a+c[0];},0);
+var score=cl(incl.reduce(function(a,c){return a+c[0]/im*c[1];},0),0,100), cov=im/tot;
+function mc(l,n,s,p,a){return '<div class="mc"><div class="l">'+l+(p?chip(p):"")+'</div><div class="n '+a+'">'+n+'</div>'+(s?'<div class="s">'+s+'</div>':"")+'</div>';}
+document.getElementById("intel").innerHTML=
+'<div class="p"><div class="ph">Site intelligence</div><div class="pb"><div style="font-weight:600">Worcester</div><div class="note" style="margin-top:2px">42.2626, -71.8023 &middot; radius 3 mi</div>'+
+'<div class="m" style="margin-top:8px">'+mc("Screening score",f(score,0),"Evidence coverage "+f(cov*100,0)+"%","e","aw")+mc("Annual electricity",G(fac),"Total facility demand","c","ac")+'</div>'+
+'<div class="note">Screening score is a product-defined preliminary model, not a permitting decision. Missing inputs lower evidence coverage rather than inflating the score.</div></div></div>'+
+'<div class="p"><div class="ph">Environmental context</div><div class="pb"><div class="m">'+
+mc("Open space (3 mi)",f(geo.gsCov,1)+"%",f(geo.gsAc,0)+" ac mapped","o","af")+
+mc("Analysis area",f(geo.area,1)+" mi&sup2;",f(geo.gsAc/geo.area,0)+" ac/mi&sup2;","c","ac")+
+mc("Schools &le; 1 mi",f(geo.w1,0),f(geo.w3,0)+" within 3 mi","o","aw")+
+mc("Nearest school",f(geo.near,2)+" mi","representative point","c","ac")+
+mc("Environmental justice","Within EJ","Worcester EJ block group","o","aw")+
+mc("Flood hazard","Unknown","Layer unavailable","u","am")+'</div>'+
+'<div class="note">Open-space datasets do not include every tree, lawn, or undeveloped parcel. Absence of mapped features is not proof of absence on the ground.</div></div></div>'+
+'<div class="p"><div class="ph">Energy &amp; water</div><div class="pb"><div class="m">'+
+mc("Facility demand",G(fac),f(fac,0)+" MWh/yr","c","ac")+
+mc("IT demand (via PUE)",G(it),"Distinct from facility","c","ac")+
+mc("Clean-energy gap",G(unc),f(P.clean*100,0)+"% covered (assumption)","e","aw")+
+mc("Modeled water use",L(water),L(water/365)+"/day","e","ac")+'</div></div></div>'+
+'<div class="p"><div class="ph">Grid capacity</div><div class="pb"><div class="b bu">Local available capacity unknown</div><div class="note">Capacity is a simulated scenario constraint, not verified grid saturation.</div></div></div>'+
+'<div class="p"><div class="ph">Massachusetts Policy Navigator</div><div class="pb"><div class="b bu" style="color:#e5ecf5">At 40 MW the scenario is above EO 658&rsquo;s &gt;25 MW threshold; several requirements are potentially applicable.</div>'+
+'<div class="f"><div style="display:flex;justify-content:space-between"><span class="ft">EO 658 large-project scope (&gt;25 MW)</span><span class="c ca">Potentially applicable</span></div><div class="note" style="margin-top:4px">Peak 40 MW is greater than the 25 MW threshold.</div></div>'+
+'<div class="f"><div style="display:flex;justify-content:space-between"><span class="ft">Clean-electricity procurement</span><span class="c ca">Potentially applicable</span></div></div>'+
+'<div class="f"><div style="display:flex;justify-content:space-between"><span class="ft">Implementation rules &amp; guidance</span><span class="c cu">Guidance under development</span></div></div>'+
+'<div class="note">Some EO 658 implementation rules are still under development as of Oct 2026. Pending measures are not finalized regulation.</div></div></div>';
+</script>

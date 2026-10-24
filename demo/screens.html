@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>DataDaddy</title>
+<style>
+:root{--bg:#0a0f1a;--panel:#141b2b;--panel2:#1c2639;--border:#273349;--text:#e5ecf5;--muted:#8ba0bf;--favorable:#34d399;--caution:#fbbf24;--excluded:#64748b;--unavail:#475569;--risk:#f87171;--accent:#38bdf8}
+*{box-sizing:border-box}html,body{margin:0;background:var(--bg);color:var(--text);font-family:ui-sans-serif,system-ui,"Segoe UI",Roboto,sans-serif;font-size:13px}
+.tabular{font-variant-numeric:tabular-nums}
+.grid-texture{background-image:linear-gradient(to right,rgba(39,51,73,.35) 1px,transparent 1px),linear-gradient(to bottom,rgba(39,51,73,.35) 1px,transparent 1px);background-size:28px 28px}
+header{height:48px;display:flex;align-items:center;justify-content:space-between;padding:0 16px;border-bottom:1px solid var(--border);background:var(--panel)}
+.brand{display:flex;align-items:center;gap:8px}.logo{width:28px;height:28px;border-radius:7px;background:rgba(56,189,248,.2);color:var(--accent);display:flex;align-items:center;justify-content:center;font-weight:800}
+.brand b{font-size:14px}.acc{color:var(--accent)}.tag{font-size:9px;letter-spacing:.15em;text-transform:uppercase;color:var(--muted)}
+nav{display:flex;gap:4px}nav a{font-size:12px;color:var(--muted);padding:6px 10px;border-radius:6px}nav a.active{background:rgba(56,189,248,.15);color:var(--accent)}
+main{display:flex;height:812px}
+aside{width:300px;flex:0 0 300px;overflow:hidden;border-right:1px solid var(--border);background:rgba(10,15,26,.6);padding:12px;display:flex;flex-direction:column;gap:12px}
+aside.right{border-right:none;border-left:1px solid var(--border);width:360px;flex-basis:360px;overflow-y:auto}
+.mapw{flex:1;min-width:0;position:relative;background:radial-gradient(circle at 40% 45%,#13233a,#0a0f1a 70%)}
+.panel{border:1px solid var(--border);background:rgba(20,27,43,.8);border-radius:10px}
+.ph{padding:8px 12px;border-bottom:1px solid var(--border);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:600}
+.pb{padding:10px}
+label.ctl{display:block;margin-bottom:10px}label.ctl .row{display:flex;justify-content:space-between;font-size:11px;color:var(--muted);text-transform:uppercase}label.ctl .val{color:var(--text);font-weight:600}
+input[type=range]{width:100%;accent-color:var(--accent);margin-top:4px}
+select,input[type=number],input[type=text]{width:100%;background:var(--panel2);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:5px 8px;font-size:13px;margin-top:4px}
+.metrics{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.metric{border:1px solid var(--border);background:rgba(28,38,57,.6);border-radius:8px;padding:8px 10px}
+.metric .lab{font-size:11px;text-transform:uppercase;color:var(--muted);display:flex;justify-content:space-between;align-items:center;gap:4px}
+.metric .num{font-size:18px;font-weight:700;margin-top:3px}.metric .sub{font-size:11px;color:var(--muted);margin-top:2px}
+.chip{font-size:9px;text-transform:uppercase;border:1px solid;border-radius:4px;padding:1px 5px;white-space:nowrap}
+.c-official{color:var(--favorable);border-color:rgba(52,211,153,.4);background:rgba(52,211,153,.12)}
+.c-calculated{color:var(--accent);border-color:rgba(56,189,248,.4);background:rgba(56,189,248,.12)}
+.c-assumption{color:var(--caution);border-color:rgba(251,191,36,.4);background:rgba(251,191,36,.12)}
+.c-estimated{color:var(--caution);border-color:rgba(251,191,36,.3);background:rgba(251,191,36,.08)}
+.c-unknown{color:var(--muted);border-color:rgba(100,116,139,.4);background:rgba(100,116,139,.2)}
+.acc-fav{color:var(--favorable)}.acc-cau{color:var(--caution)}.acc-risk{color:var(--risk)}.acc-acc{color:var(--accent)}.acc-mut{color:var(--muted)}
+.toggle{display:flex;align-items:center;justify-content:space-between;border:1px solid var(--border);background:rgba(28,38,57,.4);border-radius:6px;padding:6px 8px;font-size:12px;color:var(--muted);margin-bottom:6px}
+.toggle.on{border-color:rgba(56,189,248,.4);background:rgba(56,189,248,.1);color:var(--text)}.toggle .box{width:14px;height:14px;border:1px solid var(--border);border-radius:3px}.toggle.on .box{background:var(--accent);border-color:var(--accent)}
+.swatch{width:12px;height:12px;border-radius:3px;display:inline-block;margin-right:6px;vertical-align:middle}
+.radii{display:flex;gap:6px}.radii button{flex:1;border:1px solid var(--border);background:rgba(28,38,57,.4);color:var(--muted);border-radius:6px;padding:4px;font-size:12px}.radii button.on{border-color:var(--accent);background:rgba(56,189,248,.15);color:var(--accent)}
+.note{font-size:10px;color:var(--muted);line-height:1.4}
+.finding{border:1px solid var(--border);border-radius:8px;padding:8px;margin-top:8px}.finding .ttl{font-size:12px;font-weight:600}
+.banner{border:1px solid;border-radius:8px;padding:8px 10px;font-size:12px}
+.b-unknown{border-color:rgba(100,116,139,.4);background:rgba(100,116,139,.1);color:var(--muted)}.b-risk{border-color:rgba(248,113,113,.4);background:rgba(248,113,113,.1);color:var(--risk)}.b-ok{border-color:rgba(52,211,153,.4);background:rgba(52,211,153,.1);color:var(--favorable)}
+.legend{position:absolute;bottom:16px;right:12px;width:250px;background:rgba(20,27,43,.96);border:1px solid var(--border);border-radius:10px;padding:12px;font-size:12px}
+.lg{display:flex;gap:8px;align-items:flex-start;margin-bottom:6px}.sw{width:12px;height:12px;border-radius:3px;flex:0 0 12px;margin-top:2px}
+.hatch{background-image:repeating-linear-gradient(45deg,var(--unavail),var(--unavail) 3px,transparent 3px,transparent 6px);border:1px solid var(--unavail)}
+.badge{position:absolute;top:10px;left:10px;background:rgba(56,189,248,.15);border:1px solid rgba(56,189,248,.4);color:var(--accent);font-size:10px;padding:3px 8px;border-radius:6px}
+.osblob{position:absolute;border-radius:50%;background:rgba(52,211,153,.28);border:1px solid rgba(52,211,153,.6)}
+.ejblob{position:absolute;border-radius:40% 55% 50% 45%;background:rgba(163,230,53,.18);border:1px dashed rgba(163,230,53,.6)}
+.school{position:absolute;width:8px;height:8px;border-radius:50%;background:var(--caution);border:1px solid #0a0f1a}
+.radius{position:absolute;border:1.5px dashed var(--accent);border-radius:50%;background:rgba(56,189,248,.08)}
+.sel{position:absolute;width:14px;height:14px;border-radius:50%;background:var(--accent);border:2px solid #e5ecf5;transform:translate(-50%,-50%)}
+.mapcap{position:absolute;bottom:4px;left:8px;font-size:9px;color:var(--muted)}
+</style></head>
+<body>
+<header>
+ <div class="brand"><div class="logo">D</div><div><b>Data<span class="acc">Daddy</span></b><div class="tag">Putting data centers in their place</div></div></div>
+ <nav><a class="active">Explore Map</a><a>Scenario Lab</a><a>Compare Sites</a><a>Massachusetts Policy</a><a>Data &amp; Methodology</a></nav>
+</header>
+<main>
+ <aside class="left grid-texture">
+  <div class="panel"><div class="ph">Location search</div><div class="pb"><input type="text" value="Worcester"/><div class="note" style="margin-top:6px">Or click anywhere on the map to select a location.</div></div></div>
+  <div class="panel"><div class="ph">Data layers</div><div class="pb">
+   <div class="toggle on"><span><span class="swatch" style="background:#8ba0bf"></span>Municipal boundaries</span><span class="box"></span></div>
+   <div class="toggle on"><span><span class="swatch" style="background:#34d399"></span>Protected &amp; recreational open space</span><span class="box"></span></div>
+   <div class="toggle on"><span><span class="swatch" style="background:#a3e635"></span>Environmental justice block groups</span><span class="box"></span></div>
+   <div class="toggle on"><span><span class="swatch" style="background:#fbbf24"></span>Schools</span><span class="box"></span></div></div></div>
+  <div class="panel"><div class="ph">Project assumptions</div><div class="pb" id="ctl"></div></div>
+  <div class="panel"><div class="ph">Development filters</div><div class="pb">
+   <div class="toggle"><span>Treat as expansion of existing capacity</span><span class="box"></span></div>
+   <div class="note" style="margin:4px 0;text-transform:uppercase">Analysis radius</div>
+   <div class="radii"><button data-r="1">1 mi</button><button class="on" data-r="3">3 mi</button><button data-r="5">5 mi</button></div></div></div>
+ </aside>
+ <div class="mapw grid-texture">
+  <div class="badge">DataDaddy · live model engine</div>
+  <!-- stylized MA map placeholder with real relative feature positions near Worcester -->
+  <div class="osblob" style="left:44%;top:40%;width:90px;height:80px"></div>
+  <div class="osblob" style="left:36%;top:52%;width:120px;height:100px"></div>
+  <div class="osblob" style="left:52%;top:34%;width:70px;height:64px"></div>
+  <div class="ejblob" style="left:46%;top:48%;width:80px;height:70px"></div>
+  <div class="radius" id="radius" style="left:50%;top:45%;width:220px;height:220px;transform:translate(-50%,-50%)"></div>
+  <div class="school" style="left:47%;top:43%"></div><div class="school" style="left:53%;top:47%"></div><div class="school" style="left:49%;top:51%"></div><div class="school" style="left:44%;top:46%"></div>
+  <div class="sel" style="left:50%;top:45%"></div>
+  <div class="mapcap">© OpenStreetMap contributors · screening model, not a permitting decision</div>
+  <div class="legend">
+   <div style="font-weight:600;color:var(--muted);text-transform:uppercase;font-size:11px;margin-bottom:8px">Screening legend</div>
+   <div class="lg"><span class="sw" style="background:#34d399"></span><div><b>Lower modeled constraints</b></div></div>
+   <div class="lg"><span class="sw" style="background:#fbbf24"></span><div><b>Constrained</b></div></div>
+   <div class="lg"><span class="sw" style="background:#64748b"></span><div><b>Excluded (verified)</b></div></div>
+   <div class="lg"><span class="sw hatch"></span><div><b>Data unavailable</b></div></div>
+   <div class="banner b-unknown" id="legendgrid" style="margin-top:6px">Grid: Local available capacity unknown</div>
+  </div>
+ </div>
+ <aside class="right grid-texture"><div id="intel"></div></aside>
+</main>
+<script src="./engine.js"></script>
+</body></html>
