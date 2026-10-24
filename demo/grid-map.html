@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>DataDaddy — Massachusetts Data Center Grid Map</title>
+<link href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" rel="stylesheet" />
+<style>
+:root{--bg:#0a0f1a;--panel:#141b2b;--panel2:#1c2639;--border:#273349;--text:#e5ecf5;--muted:#8ba0bf;
+--favorable:#34d399;--favorable2:#a3e635;--caution:#fbbf24;--excluded:#64748b;--unavail:#475569;--risk:#f87171;--accent:#38bdf8}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--text);font-family:ui-sans-serif,system-ui,"Segoe UI",Roboto,sans-serif;font-size:13px;overflow:hidden}
+.tabular{font-variant-numeric:tabular-nums}
+header{height:48px;display:flex;align-items:center;justify-content:space-between;padding:0 16px;border-bottom:1px solid var(--border);background:var(--panel);position:relative;z-index:20}
+.brand{display:flex;align-items:center;gap:8px}
+.logo{width:28px;height:28px;border-radius:7px;background:rgba(56,189,248,.2);color:var(--accent);display:flex;align-items:center;justify-content:center;font-weight:800}
+.brand b{font-size:14px}.acc{color:var(--accent)}
+.tag{font-size:9px;letter-spacing:.15em;text-transform:uppercase;color:var(--muted)}
+.hint{font-size:11px;color:var(--muted)}
+.hint b{color:var(--accent)}
+main{display:flex;height:calc(100% - 48px)}
+aside{width:320px;flex:0 0 320px;overflow-y:auto;border-right:1px solid var(--border);background:rgba(10,15,26,.6);padding:12px;display:flex;flex-direction:column;gap:12px}
+aside.right{border-right:none;border-left:1px solid var(--border);width:360px;flex-basis:360px}
+.mapwrap{flex:1;min-width:0;position:relative}
+#map{position:absolute;inset:0}
+.panel{border:1px solid var(--border);background:rgba(20,27,43,.82);border-radius:10px}
+.ph{display:flex;align-items:center;justify-content:space-between;padding:8px 12px;border-bottom:1px solid var(--border);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:600}
+.pb{padding:10px}
+label.ctl{display:block;margin-bottom:10px}
+label.ctl .row{display:flex;justify-content:space-between;font-size:11px;color:var(--muted);text-transform:uppercase}
+label.ctl .v{color:var(--text);font-weight:600}
+input[type=range]{width:100%;accent-color:var(--accent);margin-top:4px}
+select,input[type=number]{width:100%;background:var(--panel2);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:5px 8px;margin-top:4px}
+.btn{display:flex;align-items:center;justify-content:center;gap:6px;width:100%;border:1px solid var(--accent);background:rgba(56,189,248,.15);color:var(--accent);border-radius:7px;padding:8px;font-weight:600;cursor:pointer;font-size:13px}
+.btn:hover{background:rgba(56,189,248,.25)}
+.btn.ghost{border-color:var(--border);background:transparent;color:var(--muted);font-weight:500}
+.btn.ghost:hover{background:var(--panel2);color:var(--text)}
+.metrics{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.metric{border:1px solid var(--border);background:rgba(28,38,57,.6);border-radius:8px;padding:8px 10px}
+.metric .lab{font-size:11px;text-transform:uppercase;color:var(--muted);display:flex;justify-content:space-between;align-items:center;gap:4px}
+.metric .num{font-size:17px;font-weight:700;margin-top:3px}
+.metric .sub{font-size:11px;color:var(--muted);margin-top:2px}
+.chip{font-size:9px;text-transform:uppercase;border:1px solid;border-radius:4px;padding:1px 5px;white-space:nowrap}
+.co{color:var(--favorable);border-color:#34d39966}.cc{color:var(--accent);border-color:#38bdf866}.ca{color:var(--caution);border-color:#fbbf2466}.cu{color:var(--muted);border-color:#64748b66}
+.af{color:var(--favorable)}.aw{color:var(--caution)}.ar{color:var(--risk)}.ac{color:var(--accent)}.am{color:var(--muted)}
+.toggle{display:flex;align-items:center;justify-content:space-between;border:1px solid var(--border);background:rgba(28,38,57,.4);border-radius:6px;padding:6px 8px;font-size:12px;color:var(--muted);margin-bottom:6px;cursor:pointer}
+.toggle.on{border-color:rgba(56,189,248,.4);background:rgba(56,189,248,.1);color:var(--text)}
+.toggle .box{width:14px;height:14px;border:1px solid var(--border);border-radius:3px}
+.toggle.on .box{background:var(--accent);border-color:var(--accent)}
+.sw{width:12px;height:12px;border-radius:3px;display:inline-block;margin-right:6px;vertical-align:middle}
+.dc-item{display:flex;align-items:center;justify-content:space-between;border:1px solid var(--border);border-radius:7px;padding:6px 8px;margin-bottom:6px;font-size:12px}
+.dc-item .dot{width:10px;height:10px;border-radius:50%;margin-right:6px;display:inline-block}
+.dc-item .x{color:var(--risk);cursor:pointer;font-weight:700;padding:0 4px}
+.banner{border:1px solid;border-radius:8px;padding:8px 10px;font-size:12px}
+.bu{border-color:#64748b66;background:#64748b1a;color:var(--muted)}
+.br{border-color:#f8717166;background:#f871711a;color:var(--risk)}
+.bo{border-color:#34d39966;background:#34d3991a;color:var(--favorable)}
+.note{font-size:10px;color:var(--muted);line-height:1.45;margin-top:8px}
+.finding{border:1px solid var(--border);border-radius:8px;padding:8px;margin-top:8px}
+.finding .ttl{font-size:12px;font-weight:600}
+.legend{position:absolute;bottom:14px;right:12px;width:252px;background:rgba(20,27,43,.96);border:1px solid var(--border);border-radius:10px;padding:12px;font-size:12px;z-index:10}
+.lg{display:flex;gap:8px;align-items:flex-start;margin-bottom:6px}
+.lgsw{width:12px;height:12px;border-radius:3px;flex:0 0 12px;margin-top:2px}
+.hatch{background-image:repeating-linear-gradient(45deg,var(--unavail),var(--unavail) 3px,transparent 3px,transparent 6px);border:1px solid var(--unavail)}
+.badge{position:absolute;top:10px;left:10px;z-index:10;background:rgba(56,189,248,.15);border:1px solid rgba(56,189,248,.4);color:var(--accent);font-size:10px;padding:4px 9px;border-radius:7px;letter-spacing:.04em}
+.place-hint{position:absolute;top:10px;left:50%;transform:translateX(-50%);z-index:10;background:rgba(251,191,36,.18);border:1px solid rgba(251,191,36,.5);color:var(--caution);font-size:11px;padding:5px 12px;border-radius:7px;display:none}
+.place-hint.show{display:block}
+.dc-marker{width:18px;height:18px;border-radius:4px;border:2px solid #0a0f1a;box-shadow:0 0 0 1px rgba(255,255,255,.4);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:800;color:#0a0f1a}
+.maplibregl-popup-content{background:#141b2b!important;color:#e5ecf5!important;border:1px solid #273349;border-radius:8px;font-size:12px}
+.maplibregl-popup-tip{border-top-color:#141b2b!important}
+.maplibregl-ctrl-group{background:#141b2b!important;border:1px solid #273349!important}
+.maplibregl-ctrl button{filter:invert(1) hue-rotate(180deg)}
+</style>
+</head>
+<body>
+<header>
+  <div class="brand"><div class="logo">D</div><div><b>Data<span class="acc">Daddy</span></b><div class="tag">Putting data centers in their place</div></div></div>
+  <div class="hint" id="modehint"><b>Explore mode</b> — click the map to inspect a site. Switch to <b>Place mode</b> to envision data centers.</div>
+</header>
+<main>
+  <!-- LEFT -->
+  <aside class="left">
+    <div class="panel"><div class="ph">Mode</div><div class="pb">
+      <button class="btn" id="placeBtn">+ Place data centers on the grid</button>
+      <div class="note" id="placenote">Explore mode active. Click the map to inspect a location.</div>
+    </div></div>
+
+    <div class="panel"><div class="ph">New facility template</div><div class="pb">
+      <label class="ctl"><div class="row"><span>Project type</span></div>
+        <select id="ptype"><option value="enterprise">Enterprise</option><option value="hyperscale">Hyperscale</option><option value="ai-compute">AI compute</option><option value="university-research">University research</option></select></label>
+      <label class="ctl"><div class="row"><span>Peak facility demand</span><span class="v"><span id="mwv">40</span> MW</span></div><input id="mw" type="range" min="5" max="200" step="1" value="40"></label>
+      <label class="ctl"><div class="row"><span>Average utilization</span><span class="v"><span id="utilv">85</span>%</span></div><input id="util" type="range" min="30" max="100" step="1" value="85"></label>
+      <label class="ctl"><div class="row"><span>PUE</span></div><input id="pue" type="number" min="1" max="3" step="0.05" value="1.4"></label>
+      <label class="ctl"><div class="row"><span>Cooling</span></div>
+        <select id="cool"><option value="air">Air cooled</option><option value="water">Water based</option><option value="hybrid" selected>Hybrid</option><option value="closed-loop-liquid">Closed-loop liquid</option></select></label>
+      <label class="ctl"><div class="row"><span>Clean-energy coverage</span><span class="v"><span id="cleanv">30</span>%</span></div><input id="clean" type="range" min="0" max="100" step="1" value="30"></label>
+    </div></div>
+
+    <div class="panel"><div class="ph">Grid scenario</div><div class="pb">
+      <label class="ctl"><div class="row"><span>Modeled regional capacity</span></div><input id="cap" type="number" min="0" step="10" placeholder="unknown"></label>
+      <label class="ctl"><div class="row"><span>Existing assumed load</span><span class="v"><span id="existv">0</span> MW</span></div><input id="exist" type="range" min="0" max="500" step="10" value="0"></label>
+      <div class="note">Capacity is a user-entered scenario value. Leave blank to keep it <b>unknown</b> — never defaulted to zero or unlimited.</div>
+    </div></div>
+
+    <div class="panel"><div class="ph">Map layers</div><div class="pb" id="layers">
+      <div class="toggle on" data-layer="municipalities"><span><span class="sw" style="background:#8ba0bf"></span>Municipal boundaries</span><span class="box"></span></div>
+      <div class="toggle on" data-layer="openspace"><span><span class="sw" style="background:#34d399"></span>Protected open space</span><span class="box"></span></div>
+      <div class="toggle on" data-layer="ej"><span><span class="sw" style="background:#a3e635"></span>Environmental justice</span><span class="box"></span></div>
+      <div class="toggle on" data-layer="schools"><span><span class="sw" style="background:#fbbf24"></span>Schools</span><span class="box"></span></div>
+      <div class="toggle" data-layer="gridcells"><span><span class="sw" style="background:#38bdf8"></span>Grid-capacity overlay</span><span class="box"></span></div>
+    </div></div>
+  </aside>
+
+  <!-- MAP -->
+  <div class="mapwrap">
+    <div class="badge">DataDaddy · live model engine</div>
+    <div class="place-hint" id="placehint">PLACE MODE — click the map to drop a data center</div>
+    <div id="map"></div>
+    <div class="legend">
+      <div style="font-weight:600;color:var(--muted);text-transform:uppercase;font-size:11px;letter-spacing:.08em;margin-bottom:8px">Legend</div>
+      <div class="lg"><span class="lgsw" style="background:#34d399"></span><div><b>Open space</b><div class="note" style="margin:0">Protected / recreational</div></div></div>
+      <div class="lg"><span class="lgsw" style="background:#a3e635"></span><div><b>Environmental justice</b></div></div>
+      <div class="lg"><span class="lgsw" style="background:#fbbf24"></span><div><b>Schools</b></div></div>
+      <div class="lg"><span class="lgsw" style="background:#38bdf8;opacity:.5"></span><div><b>Grid cell · within capacity</b></div></div>
+      <div class="lg"><span class="lgsw" style="background:#f87171;opacity:.6"></span><div><b>Grid cell · capacity exceeded</b></div></div>
+      <div class="lg"><span class="lgsw hatch"></span><div><b>Data unavailable</b></div></div>
+      <p class="note" style="border-top:1px solid var(--border);padding-top:8px">Screening model, <b>not</b> a permitting decision. Grid overlay is a simulated scenario, not verified saturation.</p>
+    </div>
+  </div>
+
+  <!-- RIGHT -->
+  <aside class="right" id="right"></aside>
+</main>
+
+<script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
+<script src="https://unpkg.com/@turf/turf@7.1.0/turf.min.js"></script>
+<script src="./grid-app.js"></script>
+</body>
+</html>
