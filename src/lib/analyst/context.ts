@@ -1,3 +1,4 @@
+import type { FinancialResult } from "@/lib/model/financial";
 import type { SimulationResult } from "@/lib/model/orchestrator";
 import type { DataCenterProject, GridScenario, Site } from "@/lib/schemas";
 import type { GeoContext } from "@/lib/model/orchestrator";
@@ -27,6 +28,7 @@ export interface AnalystContext {
     thresholdExceeded: boolean;
     peakMW: number;
   };
+  financial?: FinancialResult;
   unknowns: string[];
 }
 
@@ -36,6 +38,7 @@ export function buildAnalystContext(
   grid: GridScenario,
   geo: GeoContext,
   result: SimulationResult,
+  financial?: FinancialResult,
 ): AnalystContext {
   const unknowns: string[] = [];
   if (!result.grid.capacityKnown) unknowns.push("Local available grid capacity");
@@ -45,6 +48,7 @@ export function buildAnalystContext(
   if (!geo.floodDataAvailable) unknowns.push("Flood hazard exposure");
 
   return {
+    financial,
     site,
     project,
     grid,

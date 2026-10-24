@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Sparkles, Loader2 } from "lucide-react";
 import { useSimulation } from "@/components/SimulationProvider";
 import { buildAnalystContext } from "@/lib/analyst/context";
@@ -11,15 +11,16 @@ import { deterministicAnswer, SUGGESTED_QUESTIONS, type AnalystAnswer } from "@/
 const STATIC_EXPORT = process.env.NEXT_PUBLIC_STATIC_EXPORT === "true";
 
 export function AnalystPanel() {
-  const { site, project, grid, geo, result } = useSimulation();
+  const { site, project, grid, geo, result, financialResult } = useSimulation();
   const [question, setQuestion] = useState("");
   const [answer, setAnswer] = useState<AnalystAnswer | null>(null);
   const [loading, setLoading] = useState(false);
+  useEffect(() => setAnswer(null), [site, project, grid, financialResult]);
 
   async function ask(q: string) {
     if (!q.trim()) return;
     setLoading(true);
-    const context = buildAnalystContext(site, project, grid, geo, result);
+    const context = buildAnalystContext(site, project, grid, geo, result, financialResult);
     if (STATIC_EXPORT) {
       setAnswer(deterministicAnswer(q, context));
       setLoading(false);

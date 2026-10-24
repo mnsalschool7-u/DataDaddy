@@ -35,3 +35,8 @@ export function fmtPct(fraction0to1: number, digits = 0): string {
 export function cx(...parts: Array<string | false | null | undefined>): string {
   return parts.filter(Boolean).join(" ");
 }
+
+/** Household sensitivities need cents so small real modeled changes stay visible. */
+export function fmtMoney(n: number): string {
+  return Math.abs(n) >= 10000 ? fmtUSD(n) : `$${fmt(n, 2)}`;
+}

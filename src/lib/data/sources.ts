@@ -24,6 +24,29 @@ const RETRIEVED = "2026-10-24";
 
 export const DATA_SOURCES: DataSource[] = [
   {
+    id: "massgis-census-housing", name: "2020 Census town population, housing units and land area",
+    publisher: "U.S. Census Bureau via MassGIS", publishedDate: "2020", retrievedDate: RETRIEVED,
+    url: "https://arcgisserver.digital.mass.gov/arcgisserver/rest/services/AGOL/Census2020_Towns/FeatureServer/2",
+    geographicCoverage: "Massachusetts municipalities", status: "loaded",
+    processingNotes: "Point-in-town query returns HOUSING20 and ALAND20; town housing density is units divided by land square miles. Runtime retrieval date appears in the financial housing panel.",
+    reliabilityLimitations: "2020 snapshot and town-level density, not current housing availability or site-radius density. No rent observation is inferred from housing counts.",
+  },
+  {
+    id: "massgis-landuse2016", name: "MassGIS Land Cover / Land Use (2016)",
+    publisher: "MassGIS, Commonwealth of Massachusetts", publishedDate: "2016", retrievedDate: RETRIEVED,
+    url: "https://arcgisserver.digital.mass.gov/arcgisserver/rest/services/AGOL/LandCoverLandUse2016/FeatureServer/0",
+    geographicCoverage: "Massachusetts; queried near conceptual footprint", status: "loaded",
+    processingNotes: "Residential, commercial and mixed-use polygons returned in WGS84 with complete pagination; footprint intersections calculated with Turf.",
+    reliabilityLimitations: "Historical land-use classification, not current occupied homes, business locations, zoning or legal parcel availability. No displacement count is inferred.",
+  },
+  {
+    id: "acs-housing-optional", name: "ACS median gross rent and household income (optional)",
+    publisher: "U.S. Census Bureau, republished by Census Reporter", retrievedDate: RETRIEVED,
+    url: "https://github.com/censusreporter/census-api/blob/master/API.md", geographicCoverage: "Supported Census county subdivisions", status: "loaded",
+    processingNotes: "Requests B25064 and B19013 for the Census town GEOID; successful observations show the returned release and source. Explicit button can copy published rent into household assumptions.",
+    reliabilityLimitations: "Browser verification returned Lowell ACS 2024 1-year estimates; service availability varies and the returned release can differ by geography. ACS estimates carry sampling uncertainty. Household baselines remain user assumptions unless a benchmark is explicitly selected.",
+  },
+  {
     id: "massgis-municipalities",
     name: "MassGIS Data: Municipalities",
     publisher: "MassGIS (Bureau of Geographic Information), Commonwealth of Massachusetts",

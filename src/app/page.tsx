@@ -22,18 +22,20 @@ const MapCanvas = dynamic(
 );
 
 export default function ExplorePage() {
+  const [mapExpanded, setMapExpanded] = useState(false);
   const [toggles, setToggles] = useState<LayerToggles>(DEFAULT_TOGGLES);
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col">
+    <div className="relative flex min-h-0 flex-1 flex-col">
+      <button onClick={() => setMapExpanded(v => !v)} className="absolute right-14 top-2 z-20 rounded border border-border bg-panel px-2 py-1 text-[10px] text-accent">{mapExpanded ? "Show controls & impact" : "Expand map"}</button>
       <div className="flex min-h-0 flex-1">
-        <LeftSidebar toggles={toggles} setToggles={setToggles} />
+        {!mapExpanded && <LeftSidebar toggles={toggles} setToggles={setToggles} />}
         <div className="relative min-w-0 flex-1 grid-texture">
           <MapCanvas toggles={toggles} />
         </div>
-        <RightSidebar />
+        {!mapExpanded && <RightSidebar />}
       </div>
-      <BottomPanel />
+      {!mapExpanded && <BottomPanel />}
     </div>
   );
 }

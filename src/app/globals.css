@@ -86,3 +86,8 @@ body {
     color: #000;
   }
 }
+
+/* Conceptual facility palette block; map extrusion is the georeferenced footprint. */
+.facility-token { position: relative; transform: perspective(300px) rotateX(10deg) rotateY(-14deg); box-shadow: 5px 5px 0 #102d45, 7px 7px 0 #38bdf855; font-weight: 700; }
+.facility-token:active { transform: perspective(300px) rotateX(0) rotateY(0); }
+@media (prefers-reduced-motion: reduce) { .facility-token { transform: none; } }

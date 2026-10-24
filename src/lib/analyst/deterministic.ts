@@ -33,6 +33,11 @@ export function deterministicAnswer(
     `Screening score: ${fmt(o.screeningScore, 0)} / 100 at ${fmt(o.evidenceCoverage * 100, 0)}% evidence coverage.`,
   ];
 
+  if (ctx.financial) supportingNumbers.push(
+    `Hypothetical monthly upgrade exposure: $${fmt(ctx.financial.monthlyUpgradeExposure, 2)}; rent sensitivity difference: $${fmt(ctx.financial.rentDelta, 2)}/month. These are editable assumptions, not causal forecasts.`,
+    `Combined housing and energy: $${fmt(ctx.financial.combinedMonthly, 2)}/month (${fmt(ctx.financial.incomeShare * 100, 1)}% of entered annual household income).`,
+    `Municipal annual fiscal sensitivity: $${fmt(ctx.financial.annualMunicipalNet, 0)} net after modeled public costs, not confirmed revenue.`,
+  );
   const geographicEvidence: string[] = [];
   if (gs?.dataAvailable)
     geographicEvidence.push(
@@ -46,7 +51,7 @@ export function deterministicAnswer(
     geographicEvidence.push(
       ctx.geo.ej.overlaps
         ? `Location falls within a mapped Environmental Justice block group.`
-        : `No EJ overlap in the mapped subset (not proof of absence statewide).`,
+        : `No EJ overlap at the selected point in the official designated block-group layer.`,
     );
 
   const regulatory: string[] = [];

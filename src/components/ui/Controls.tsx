@@ -74,7 +74,7 @@ export function NumberField({
           step={step}
           placeholder={placeholder}
           onChange={(e) =>
-            onChange(e.target.value === "" ? null : Number(e.target.value))
+            onChange(e.target.value === "" ? null : Math.max(min ?? -Infinity, Math.min(max ?? Infinity, Number(e.target.value))))
           }
           className="tabular w-full rounded-md border border-border bg-panel-2 px-2 py-1 text-sm text-content"
           aria-label={label}

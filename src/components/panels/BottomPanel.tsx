@@ -1,4 +1,5 @@
 "use client";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 import {
   BarChart3,
@@ -15,18 +16,19 @@ import { NumberField, Slider, Select } from "@/components/ui/Controls";
 import { DATA_SOURCES } from "@/lib/data/sources";
 import { WaterSensitivityChart } from "@/components/charts/WaterSensitivityChart";
 import { saveReportSnapshot } from "@/lib/report";
-import { asset } from "@/lib/basePath";
-import { cx, fmt, fmtUSD, fmtGWh, fmtLiters, fmtPct, fmtMW } from "@/lib/format";
+import { cx, fmt, fmtUSD, fmtMoney, fmtGWh, fmtLiters, fmtPct, fmtMW } from "@/lib/format";
 
 type Tab = "calculations" | "grid" | "cost" | "charts" | "sources";
 
 export function BottomPanel() {
+  const router = useRouter();
   const [open, setOpen] = useState(true);
   const [tab, setTab] = useState<Tab>("calculations");
-  const { result, project, grid, geo, cost, updateGrid, updateCost, site } = useSimulation();
+  const { result, project, grid, geo, cost, updateGrid, updateCost, site, finance, financialResult, community, landUseImpact, landUseRetrievedAt } = useSimulation();
 
   function openReport() {
     saveReportSnapshot({
+      finance: { inputs: finance, cost, result: financialResult, community, landUseImpact, landUseRetrievedAt, variants: [] },
       generatedAt: new Date().toISOString(),
       site,
       project,
@@ -34,7 +36,7 @@ export function BottomPanel() {
       geo,
       result,
     });
-    window.open(asset("/report"), "_blank");
+    router.push("/report");
   }
 
   const TABS: { id: Tab; label: string; icon: React.ElementType }[] = [
@@ -288,10 +290,9 @@ export function BottomPanel() {
                 <div className="col-span-2 self-end rounded-md border border-border bg-panel-2/40 px-2.5 py-2 md:col-span-3">
                   Total upgrade {fmtUSD(result.cost.totalUpgradeCost)} · non-developer{" "}
                   {fmtUSD(result.cost.nonDeveloperAllocatedCost)} · illustrative household
-                  exposure <span className="text-caution">{fmtUSD(result.cost.annualHouseholdExposure)}/yr</span>
+                  exposure <span className="text-caution">{fmtMoney(financialResult.monthlyUpgradeExposure)}/month</span>
                   <div className="mt-1 text-[10px] text-muted">
-                    Simplified financial sensitivity model — NOT a forecast of actual
-                    bills or approved utility rates. Full developer funding → $0 exposure.
+                    Financial sensitivity uses the household allocation and financing entered in Financial Impact. It is not a tariff forecast. Full developer funding removes grid-upgrade exposure; independent rent and utility-rate sensitivities remain.
                   </div>
                 </div>
               )}

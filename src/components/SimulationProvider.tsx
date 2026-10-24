@@ -3,18 +3,24 @@ import {
   createContext,
   useContext,
   useMemo,
+  useCallback,
   useState,
   type ReactNode,
 } from "react";
 import {
   DEFAULT_PROJECT,
   DEFAULT_WEIGHTS,
-  type CostInputs,
-  type DataCenterProject,
-  type GridScenario,
+  CostInputs,
+  DataCenterProject,
+  GridScenario,
   type ScoringWeights,
   type Site,
 } from "@/lib/schemas";
+import { FinancialInputs, DEFAULT_FINANCIAL, computeFinancial, type FinancialResult } from "@/lib/model/financial";
+import { useCommunityContext, type CommunityContext } from "@/lib/data/community";
+import type { FeatureCollection, Polygon, MultiPolygon } from "geojson";
+import { useLandUse } from "@/lib/data/landuse";
+import { type OverlayMode } from "@/lib/model/zones";
 import type { AllLayers } from "@/lib/data/loader";
 import { useSiteLayers } from "@/lib/data/useSiteLayers";
 import {
@@ -37,6 +43,22 @@ interface SimContextValue extends SimState {
   layersLoading: boolean;
   geo: GeoContext;
   result: SimulationResult;
+  landUse: FeatureCollection<Polygon | MultiPolygon> | null;
+  landUseImpact: { residentialAcres: number; commercialAcres: number } | null;
+  landUseLoading: boolean;
+  landUseError?: string;
+  landUseRetrievedAt?: string;
+  finance: FinancialInputs;
+  financialResult: FinancialResult;
+  updateFinance: (f: Partial<FinancialInputs>) => void;
+  financeError: string | null;
+  community: CommunityContext | null;
+  communityLoading: boolean;
+  communityError?: string;
+  overlay: OverlayMode;
+  setOverlay: (o: OverlayMode) => void;
+  impactTab: "site" | "finance";
+  setImpactTab: (v: "site" | "finance") => void;
   setSite: (s: Site | null) => void;
   updateProject: (p: Partial<DataCenterProject>) => void;
   updateGrid: (g: Partial<GridScenario>) => void;
@@ -57,7 +79,7 @@ const DEFAULT_COST: CostInputs = {
   costPerMW: 2_000_000,
   incrementalMW: 20,
   developerFundedFraction: 1,
-  households: 150_000,
+  households: 10_000,
   amortizationYears: 20,
 };
 
@@ -73,8 +95,19 @@ export function SimulationProvider({ children }: { children: ReactNode }) {
   const [site, setSite] = useState<Site | null>(null);
   const [project, setProject] = useState<DataCenterProject>(DEFAULT_PROJECT);
   const [grid, setGrid] = useState<GridScenario>(DEFAULT_GRID);
-  const [cost, setCost] = useState<CostInputs>(DEFAULT_COST);
+  const [baseCost, setCost] = useState<CostInputs>(DEFAULT_COST);
   const [weights, setWeights] = useState<ScoringWeights>(DEFAULT_WEIGHTS);
+  const [finance, setFinance] = useState<FinancialInputs>(DEFAULT_FINANCIAL);
+  const [financeError, setFinanceError] = useState<string | null>(null);
+  const [overlay, setOverlay] = useState<OverlayMode>("overall");
+  const [impactTab, setImpactTab] = useState<"site" | "finance">("site");
+  const landUseState = useLandUse(site, project.footprintAcres);
+  const { community, communityLoading, communityError } = useCommunityContext(site);
+  const cost = useMemo(() => ({ ...baseCost,
+    incrementalMW: finance.manualUpgradeMW ?? project.peakFacilityMW * finance.upgradeFraction,
+    developerFundedFraction: project.developerFundedFraction,
+  }), [baseCost, finance.manualUpgradeMW, finance.upgradeFraction, project.peakFacilityMW, project.developerFundedFraction]);
+  const financialResult = useMemo(() => computeFinancial(finance, cost), [finance, cost]);
   const { layers, layersLoading } = useSiteLayers(site);
 
   const geo: GeoContext = useMemo(() => {
@@ -105,6 +138,7 @@ export function SimulationProvider({ children }: { children: ReactNode }) {
     [site, project, grid, cost, weights, geo],
   );
 
+  const selectSite = useCallback((s: Site | null) => { setSite(s); if (s) setImpactTab("finance"); }, []);
   const value: SimContextValue = {
     site,
     project,
@@ -115,10 +149,31 @@ export function SimulationProvider({ children }: { children: ReactNode }) {
     layersLoading,
     geo,
     result,
-    setSite,
-    updateProject: (p) => setProject((prev) => ({ ...prev, ...p })),
-    updateGrid: (g) => setGrid((prev) => ({ ...prev, ...g })),
-    updateCost: (c) => setCost((prev) => ({ ...prev, ...c })),
+    ...landUseState, finance, financialResult, financeError, community, communityLoading, communityError, overlay, setOverlay, impactTab, setImpactTab,
+    updateFinance: f => setFinance(previous => {
+      const parsed = FinancialInputs.safeParse({ ...previous, ...f });
+      if (!parsed.success) { setFinanceError(parsed.error.issues[0].message); return previous; }
+      setFinanceError(null); return parsed.data;
+    }),
+    setSite: selectSite,
+    updateProject: p => {
+      const parsed = DataCenterProject.safeParse({ ...project, ...p });
+      if (!parsed.success) { setFinanceError(parsed.error.issues[0].message); return; }
+      setProject(parsed.data); setFinanceError(null);
+    },
+    updateGrid: g => {
+      const parsed = GridScenario.safeParse({ ...grid, ...g });
+      if (!parsed.success) { setFinanceError(parsed.error.issues[0].message); return; }
+      setGrid(parsed.data); setFinanceError(null);
+    },
+    updateCost: c => {
+      const parsed = CostInputs.safeParse({ ...cost, ...c });
+      if (!parsed.success) { setFinanceError(parsed.error.issues[0].message); return; }
+      setFinanceError(null);
+      setCost(prev => ({ ...prev, ...c }));
+      if (c.incrementalMW !== undefined) setFinance(prev => ({ ...prev, manualUpgradeMW: c.incrementalMW! }));
+      if (c.developerFundedFraction !== undefined) setProject(prev => ({ ...prev, developerFundedFraction: c.developerFundedFraction! }));
+    },
     setWeights,
   };
 

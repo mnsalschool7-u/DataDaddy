@@ -1,11 +1,12 @@
 "use client";
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { Printer } from "lucide-react";
 import { loadReportSnapshot, type ReportSnapshot } from "@/lib/report";
 import { DATA_SOURCES } from "@/lib/data/sources";
 import { COOLING_LABELS } from "@/lib/model/water";
 import { STATUS_LABELS } from "@/lib/policy/eo658";
-import { fmt, fmtGWh, fmtLiters, fmtPct, fmtMW, fmtUSD } from "@/lib/format";
+import { fmt, fmtGWh, fmtLiters, fmtPct, fmtMW, fmtUSD, fmtMoney } from "@/lib/format";
 
 export default function ReportPage() {
   const [snap, setSnap] = useState<ReportSnapshot | null>(null);
@@ -25,7 +26,8 @@ export default function ReportPage() {
 
   return (
     <div className="mx-auto max-w-4xl overflow-y-auto bg-white p-8 text-black">
-      <div className="no-print mb-4 flex justify-end">
+      <div className="no-print mb-4 flex items-center justify-between">
+        <Link href="/" className="text-xs text-slate-700 underline">← Back to simulation</Link>
         <button
           onClick={() => window.print()}
           className="flex items-center gap-1.5 rounded-md bg-slate-800 px-3 py-1.5 text-xs font-medium text-white"
@@ -38,6 +40,34 @@ export default function ReportPage() {
         <h1 className="text-xl font-bold">DataDaddy Infrastructure Site Intelligence Report</h1>
         <p className="text-sm text-slate-600">Generated {date}</p>
       </header>
+
+      {snap.finance && <section className="my-5 space-y-3 border-b border-slate-300 pb-4">
+        <h2 className="text-lg font-semibold">Household, institutional and municipal financial sensitivity</h2>
+        <p className="text-xs">Calculated scenario, not a utility tariff forecast, housing-market prediction or confirmed tax revenue. Rent-change assumptions are independent of facility siting.</p>
+        <Grid>
+          <KV k="Baseline rent (household input)" v={`${fmtMoney(snap.finance.inputs.baselineRent)}/month`} />
+          <KV k="Scenario rent" v={`${fmtMoney(snap.finance.result.modeledRent)}/month (${snap.finance.inputs.rentChangePct}% sensitivity)`} />
+          <KV k="Baseline electricity (household input)" v={`${fmtMoney(snap.finance.inputs.baselineElectricity)}/month`} />
+          <KV k="Household allocated upgrade exposure" v={`${fmtMoney(snap.finance.result.monthlyUpgradeExposure)}/month`} />
+          <KV k="Modeled electricity" v={`${fmtMoney(snap.finance.result.modeledElectricity)}/month`} />
+          <KV k="Combined monthly / annual" v={`${fmtMoney(snap.finance.result.combinedMonthly)} / ${fmtMoney(snap.finance.result.combinedAnnual)}`} />
+          <KV k="Share of entered household income" v={fmtPct(snap.finance.result.incomeShare)} />
+          <KV k="Infrastructure investment / developer share" v={`${fmtMoney(snap.finance.result.upgradeInvestment)} / ${fmtPct(project.developerFundedFraction)}`} />
+          <KV k="Business / school annual energy exposure" v={`${fmtMoney(snap.finance.result.businessAnnualExposure)} / ${fmtMoney(snap.finance.result.schoolAnnualExposure)}`} />
+          <KV k="Gross annual property tax assumption" v={fmtMoney(snap.finance.result.annualPropertyTax)} />
+          <KV k="Annual municipal public costs / net" v={`${fmtMoney(snap.finance.result.annualPublicCost)} / ${fmtMoney(snap.finance.result.annualMunicipalNet)}`} />
+          <KV k="School alternative land value (one-time assumption)" v={fmtMoney(snap.finance.inputs.schoolLandOpportunityCost)} />
+        </Grid>
+        {snap.finance.community && <p className="text-xs">{snap.finance.community.town}: {fmt(snap.finance.community.housingUnits)} housing units (2020 Census), {fmt(snap.finance.community.housingUnitsPerSqMile)} units per town land square mile. Source: <a href={snap.finance.community.sourceUrl}>{snap.finance.community.sourceUrl}</a>. Retrieved {snap.finance.community.retrievedAt}. Published local rent: {snap.finance.community.rentBenchmark == null ? "unavailable; rent baseline is a household assumption" : `${fmtMoney(snap.finance.community.rentBenchmark)} (${snap.finance.community.acsRelease})`}. {snap.finance.community.acsSource && <a href={snap.finance.community.acsSource}>ACS source</a>}</p>}
+        {snap.finance.landUseImpact && <p className="text-xs">Conceptual footprint intersects {fmt(snap.finance.landUseImpact.residentialAcres, 2)} acres of residential and {fmt(snap.finance.landUseImpact.commercialAcres, 2)} acres of commercial/mixed land in the historical 2016 MassGIS land-use dataset. This is not measured displacement or current parcel/zoning evidence. Retrieved {snap.finance.landUseRetrievedAt}.</p>}
+        <h3 className="text-sm font-semibold">Financial formulas and allocation</h3>
+        <p className="text-xs">Upgrade principal = upgrade MW × $/MW × (1 − developer funding). Annual recovery = principal × r / (1 − (1+r)^−years), or principal / years at zero interest. Household monthly exposure = annual recovery × household allocation / affected households / 12. Scenario rent = baseline × (1 + rent sensitivity / 100). Combined annual = (scenario rent + scenario electricity) × 12. Municipal net = assumed tax + annual benefits − annualized separate public capital − service costs.</p>
+        <h3 className="text-sm font-semibold">Exact editable assumptions used</h3>
+        <div className="grid grid-cols-2 gap-1 text-[10px]">{Object.entries({ ...snap.finance.inputs, ...snap.finance.cost }).map(([key, value]) => <div key={key}>{key}: {String(value)}</div>)}</div>
+        <h3 className="text-sm font-semibold">Low / medium / high sensitivity</h3>
+        {snap.finance.result.scenarios.map(row => <p key={row.name} className="text-xs">{row.name} ({row.multiplier}× grid investment): household upgrade exposure {fmtMoney(row.monthlyUpgradeExposure)}/month; combined expense {fmtMoney(row.combinedMonthly)}/month.</p>)}
+        {snap.finance.variants.length > 0 && <><h3 className="text-sm font-semibold">Development alternatives</h3>{snap.finance.variants.map(v => <div key={v.name} className="text-xs"><strong>{v.name}</strong>: {fmt(v.energyGWh, 2)} GWh/year; {fmt(v.waterML, 2)} ML water/year; household change {fmtMoney(v.financial.monthlyDifference)}/month; grid investment {fmtMoney(v.financial.upgradeInvestment)}; assumed tax {fmtMoney(v.financial.annualPropertyTax)}/year; score {fmt(v.score, 1)}. {v.note}</div>)}</>}
+      </section>}
 
       <Section n="1" title="Project & location">
         <Grid>
@@ -131,7 +161,7 @@ export default function ReportPage() {
           <p className="text-sm">
             Total upgrade {fmtUSD(result.cost.totalUpgradeCost)}; non-developer allocation{" "}
             {fmtUSD(result.cost.nonDeveloperAllocatedCost)}; illustrative household exposure{" "}
-            {fmtUSD(result.cost.annualHouseholdExposure)}/yr.
+            {snap.finance ? `${fmtMoney(snap.finance.result.monthlyUpgradeExposure)}/month (${fmtMoney(snap.finance.result.monthlyUpgradeExposure * 12)}/year)` : `${fmtUSD(result.cost.annualHouseholdExposure)}/year`}.
           </p>
           <p className="mt-1 text-xs text-slate-500">
             Simplified financial sensitivity model — not a forecast of actual bills or approved rates.

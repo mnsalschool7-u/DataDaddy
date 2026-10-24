@@ -86,6 +86,19 @@ export default function MethodologyPage() {
       </div>
 
       <Panel className="mt-3">
+        <PanelHeader title="Financial and geographic sensitivity methodology" />
+        <div className="space-y-2 p-3 text-[11px] text-muted">
+          <p>Financial inputs are household and project assumptions, not observed local tariffs or a causal housing forecast. Baseline rent and electricity can be edited; a published ACS rent is used only when available and explicitly selected.</p>
+          <p>Upgrade investment = assumed upgrade MW × cost per MW. Non-developer principal = investment × (1 − developer share). Annual financing recovery = principal × r / (1 − (1+r)^−years); with r = 0 use principal / years. Household monthly exposure = recovery × household allocation / affected households / 12. Business and school shares use separate affected-customer counts; the three shares cannot exceed 100%.</p>
+          <p>Scenario rent = baseline rent × (1 + rent-change percentage / 100). Combined expense = scenario rent + baseline electricity + separately assumed utility-rate change + monthly upgrade allocation. Income burden = annual combined expense / entered household income. Rent changes may be positive, zero or negative and are not attributed to construction.</p>
+          <p>Municipal gross tax = assumed incremental taxable value × tax per $1,000 / 1,000 × (1 − abatement). Net = gross tax + annual benefits − annualized separate municipal capital − annual public services. One-time business capex, mitigation budgets and school land opportunity value remain separate from recurring utility bills.</p>
+          <p>Financial overlays apply one disclosed scenario to the selected official municipality only. Other towns are hatched as unavailable; no street-level financial precision is implied. Environmental and grid overlays refer to the selected analysis radius, not a verified utility service area. Legends disclose product-defined thresholds. An entered capacity shortfall overrides overall classification to red; absent grid data stays unknown. Grey exclusion is reserved for documented restrictions; no legal exclusions are inferred from school or park proximity.</p>
+          <p>Town housing density uses 2020 Census housing units divided by land area. Purple and orange overlays are historical 2016 residential/commercial/mixed land use near the conceptual footprint; intersection acres are not displaced homes or verified present-day development constraints. The 3D block is conceptual, not a surveyed parcel or building plan.</p>
+          <p>Green scenario efficiency scales utilization at the same peak rating to preserve modeled IT workload where the supported utilization range permits. Clean procurement does not automatically lower grid peak demand. Community funding changes cost allocation; mitigation spending alone does not improve environmental scores. Standby generator output is capacity × entered hours; fuel, emissions and dispatch are unmodeled.</p>
+        </div>
+      </Panel>
+
+      <Panel className="mt-3">
         <PanelHeader title="Data sources & provenance" />
         <div className="p-3">
           <table className="w-full text-[11px]">

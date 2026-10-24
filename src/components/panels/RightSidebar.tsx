@@ -1,4 +1,5 @@
 "use client";
+import { FinancialDashboard } from "./FinancialDashboard";
 import { booleanPointInPolygon, point } from "@turf/turf";
 import { MapPin, Leaf, Zap, Droplets, Scale, Brain } from "lucide-react";
 import { useSimulation } from "@/components/SimulationProvider";
@@ -7,7 +8,7 @@ import { PolicyNavigator } from "./PolicyNavigator";
 import { AnalystPanel } from "./AnalystPanel";
 import { fmt, fmtGWh, fmtMWh, fmtLiters, fmtMW, fmtPct } from "@/lib/format";
 
-export function RightSidebar() {
+function SiteSidebar() {
   const { site, geo, result, grid, layers, layersLoading } = useSimulation();
 
   if (!site) {
@@ -264,4 +265,16 @@ export function RightSidebar() {
       </Panel>
     </aside>
   );
+}
+
+export function RightSidebar() {
+  const { site, impactTab, setImpactTab } = useSimulation();
+  if (!site) return <SiteSidebar />;
+  return <div className="no-print flex w-96 shrink-0 flex-col border-l border-border bg-bg/80">
+    <div className="flex shrink-0 gap-2 border-b border-border p-2">
+      <button onClick={() => setImpactTab("site")} aria-pressed={impactTab === "site"} className={`flex-1 rounded p-2 text-xs ${impactTab === "site" ? "bg-accent/20 text-accent" : "text-muted"}`}>Site &amp; policy</button>
+      <button onClick={() => setImpactTab("finance")} aria-pressed={impactTab === "finance"} className={`flex-1 rounded p-2 text-xs ${impactTab === "finance" ? "bg-accent/20 text-accent" : "text-muted"}`}>Financial impact</button>
+    </div>
+    <div className="min-h-0 flex-1 overflow-y-auto">{impactTab === "finance" ? <FinancialDashboard compact /> : <SiteSidebar />}</div>
+  </div>;
 }

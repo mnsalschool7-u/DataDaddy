@@ -81,8 +81,7 @@ on static GitHub Pages hosting because the official services allow browser CORS 
 geographic metrics differ. The legacy GeoJSON generator is not used by the dashboard.
 
 Facility electricity/water demand remains a scenario calculation, not measured local usage.
-Flood hazard and verified local utility capacity remain unavailable. The Community page's
-housing context is explicitly labeled as curated approximations, not official live observations.
+Flood hazard and verified local utility capacity remain unavailable. Housing counts/density use the 2020 Census; successful optional ACS responses provide a dated local rent/income benchmark. Household baselines stay explicit assumptions unless a published benchmark is selected.
 
 ## 6. How the simulator works
 Energy: `annualFacilityMWh = peakMW × 8760 × utilization` (40 MW @ 85% → **297.84 GWh/yr**);
@@ -98,6 +97,44 @@ npm run dev                               # http://localhost:3000
 ```
 Use Node 20 or 22. Official map data requires internet access but **no API keys**. Optional LLM analyst: copy `.env.example` to
 `.env.local` and set `OPENAI_API_KEY` (degrades gracefully to the deterministic analyst).
+
+## Financial and geospatial simulation expansion
+
+Drag the 3D-style facility token onto the map, or select a location with search/click.
+A conceptual acreage-based extrusion and a draggable relocation marker show the site,
+with an analysis radius. Use **Financial impact** for editable household, infrastructure,
+housing, institutional and municipal assumptions; **Community Impact** opens the full dashboard.
+The Site & Policy tab preserves the environmental evidence and Massachusetts policy navigator.
+
+- Financial engine: grid investment, developer contribution, interest/recovery period,
+  household/business/school allocation, monthly electricity exposure and low/medium/high investment sensitivities.
+- Housing: positive/neutral/negative rent sensitivities; combined monthly/annual housing
+  and energy expenses; household-size and income comparisons. Rent changes are independent
+  assumptions, not an inferred causal effect of a data center.
+- Institutions: business/school energy exposure, separate capex and land opportunity cost,
+  assumed incremental property tax, abatement, municipal capital and annual services/benefits.
+- Compare conventional, green and community-optimized variants; every changed assumption is disclosed.
+- Seven map modes include environmental, capacity, household energy, affordability, combined
+  burden, land use and overall screening. Financial colors apply only to the selected municipality
+  using one disclosed scenario, not street-level financial predictions. Hatched areas lack evidence;
+  grey is reserved for documented exclusions (no legal exclusion records are invented).
+- Official 2020 Census town housing counts and land area provide housing density. Historical
+  2016 MassGIS residential/commercial polygons show nearby land use and conceptual footprint intersections.
+  These are not current occupied-home counts or displacement estimates. Optional ACS rent/income
+  retrieval is service-dependent: browser verification returned Lowell rent of $1,614 from ACS 2024 1-year, while a command-line request failed. Unavailable observations remain unknown.
+- Backup generator capacity/hours are editable; standby output is not deducted from grid
+  energy and generator fuel/emissions are not modeled. The component diagram explains system flows.
+- Financial reports include exact assumptions, formulas, sources and scenario variants, with browser Print/Save as PDF.
+  The analyst receives computed financial results and does not generate numeric assumptions.
+
+Defaults such as $180 electricity, $2,200 rent, tax assessment, tax rate, affected customers,
+upgrade cost and investment fraction are explicitly **illustrative user assumptions**. No tariff,
+verified grid headroom, rent causality or confirmed municipal revenue is asserted. All allocation
+shares are bounded and validated; overlapping household/business/school recovery cannot exceed 100%.
+Public municipal capital represents a separate project, not a duplicate allocation of grid upgrades.
+
+These expansion changes and `.kiro/specs/financial-expansion/` were authored by Codex; the existing
+Kiro specs, steering and hooks remain intact. No additional Kiro hook execution is claimed.
 
 ## 8. Run tests & checks
 ```bash

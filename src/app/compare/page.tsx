@@ -2,13 +2,14 @@
 import { useMemo, useState } from "react";
 import { GitCompareArrows } from "lucide-react";
 import { MUNICIPALITIES } from "@/lib/data/municipalities";
-import { DEFAULT_PROJECT, DEFAULT_WEIGHTS, type Site } from "@/lib/schemas";
+import { DEFAULT_WEIGHTS, type Site } from "@/lib/schemas";
 import { type AllLayers } from "@/lib/data/loader";
 import { useSiteLayers } from "@/lib/data/useSiteLayers";
 import { greenSpaceWithinRadius, schoolProximity, ejOverlap } from "@/lib/geo/analysis";
 import { runSimulation, type GeoContext } from "@/lib/model/orchestrator";
 import { Panel, PanelHeader, Metric } from "@/components/ui/Card";
 import { fmt, fmtGWh, fmtLiters, fmtPct } from "@/lib/format";
+import { useSimulation } from "@/components/SimulationProvider";
 import { WeightsEditor } from "@/components/panels/WeightsEditor";
 
 function siteFromMuni(name: string): Site {
@@ -29,6 +30,7 @@ function geoFor(site: Site, layers: AllLayers | null): GeoContext {
 }
 
 export default function ComparePage() {
+  const { project, grid, cost } = useSimulation();
   const [weights, setWeights] = useState(DEFAULT_WEIGHTS);
   const [aName, setAName] = useState("Worcester");
   const [bName, setBName] = useState("Lowell");
@@ -39,12 +41,12 @@ export default function ComparePage() {
   const { layers: layersB, layersLoading: loadingB } = useSiteLayers(siteB);
 
   const resA = useMemo(
-    () => runSimulation({ site: siteA, project: DEFAULT_PROJECT, grid: { mode: "public-screening", availableCapacityMW: null, existingLoadMW: 0, priorDataCenterMW: 0, portfolio: [], diversityFactor: 1 }, cost: null, weights, geo: geoFor(siteA, layersA) }),
-    [siteA, layersA, weights],
+    () => runSimulation({ site: siteA, project, grid, cost, weights, geo: geoFor(siteA, layersA) }),
+    [siteA, layersA, weights, project, grid, cost],
   );
   const resB = useMemo(
-    () => runSimulation({ site: siteB, project: DEFAULT_PROJECT, grid: { mode: "public-screening", availableCapacityMW: null, existingLoadMW: 0, priorDataCenterMW: 0, portfolio: [], diversityFactor: 1 }, cost: null, weights, geo: geoFor(siteB, layersB) }),
-    [siteB, layersB, weights],
+    () => runSimulation({ site: siteB, project, grid, cost, weights, geo: geoFor(siteB, layersB) }),
+    [siteB, layersB, weights, project, grid, cost],
   );
 
   const geoA = geoFor(siteA, layersA);
@@ -56,7 +58,7 @@ export default function ComparePage() {
         <GitCompareArrows className="text-accent" size={18} />
         <h1 className="text-base font-semibold">Compare Sites</h1>
         <span className="text-xs text-muted">
-          Same 40 MW enterprise configuration applied to both sites.
+          Current {project.peakFacilityMW} MW {project.projectType} project and shared scenario assumptions applied to both sites.
         </span>
       </div>
 
